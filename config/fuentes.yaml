@@ -1,0 +1,21 @@
+rss:
+  - nombre: "Vanguardia"
+    url: "https://vanguardia.com.mx/rss.xml"
+
+  - nombre: "El Siglo de Torreón"
+    url: "https://www.elsiglodetorreon.com.mx/index.xml"
+
+  - nombre: "El Economista"
+    url: "https://www.eleconomista.com.mx/rss/ultimas-noticias"
+
+  - nombre: "Reforma - Automotriz"
+    url: "https://www.reforma.com/rss/automotriz.xml"
+
+  - nombre: "Reforma - Internacional"
+    url: "https://www.reforma.com/rss/internacional.xml"
+
+  - nombre: "Reforma - Nacional"
+    url: "https://www.reforma.com/rss/nacional.xml"
+
+  - nombre: "Reforma - Negocios"
+    url: "https://www.reforma.com/rss/negocios.xml"
