@@ -1,0 +1,11 @@
+name: monitoreo_medios
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - feedparser
+  - pyyaml
+  - matplotlib
+  - jupyter
+  - sqlite

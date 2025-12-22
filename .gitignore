@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (NO versionar)
+data/noticias_medios.db
+data/salidas/
+
+# Entornos
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
