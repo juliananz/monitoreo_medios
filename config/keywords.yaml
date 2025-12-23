@@ -1,0 +1,28 @@
+temas:
+  inversion:
+    - inversion
+    - invertir
+    - capital
+    - expansion
+    - nueva planta
+
+  empleo:
+    - empleo
+    - empleos
+    - trabajo
+    - contratacion
+    - despidos
+
+  industria:
+    - industria
+    - industrial
+    - manufactura
+    - automotriz
+    - planta
+
+  comercio_exterior:
+    - exportacion
+    - importacion
+    - t-mec
+    - arancel
+    - comercio exterior
