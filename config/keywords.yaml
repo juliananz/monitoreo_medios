@@ -26,3 +26,25 @@ temas:
     - t-mec
     - arancel
     - comercio exterior
+    
+  riesgo:
+    - cierre
+    - despidos
+    - arancel
+    - sanciones
+    - conflicto
+    - bloqueo
+    - recorte
+    - huelga
+    - crisis
+    
+  oportunidad:
+    - inversion
+    - expansion
+    - crecimiento
+    - nueva planta
+    - empleos
+    - apertura
+    - nearshoring
+    - desarrollo
+    - modernizacion
