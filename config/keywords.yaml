@@ -27,24 +27,26 @@ temas:
     - arancel
     - comercio exterior
     
-  riesgo:
-    - cierre
-    - despidos
-    - arancel
-    - sanciones
-    - conflicto
-    - bloqueo
-    - recorte
-    - huelga
-    - crisis
+  
+riesgo:
+  - cierre
+  - despidos
+  - arancel
+  - sanciones
+  - conflicto
+  - bloqueo
+  - recorte
+  - huelga
+  - crisis
+  - ciberataque
     
-  oportunidad:
-    - inversion
-    - expansion
-    - crecimiento
-    - nueva planta
-    - empleos
-    - apertura
-    - nearshoring
-    - desarrollo
-    - modernizacion
+oportunidad:
+  - inversion
+  - expansion
+  - crecimiento
+  - nueva planta
+  - empleos
+  - apertura
+  - nearshoring
+  - desarrollo
+  - modernizacion
