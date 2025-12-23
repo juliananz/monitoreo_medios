@@ -26,7 +26,7 @@ from scrapers.scraper_rss import guardar_noticias_rss
 # Analysis
 from analisis.clasificar_noticias_db import clasificar_noticias
 from analisis.clasificar_riesgo_oportunidad_db import clasificar_riesgo_oportunidad_db
-
+from analisis.resumen_diario_csv import generar_resumen_diario
 
 def main():
     inicio = datetime.now()
@@ -37,25 +37,30 @@ def main():
     print("=" * 70)
 
     # 1. Database
-    print("\n[1/4] Initializing database...")
+    print("\n[1/5] Initializing database...")
     crear_base_datos()
     print("✔ Database ready")
 
     # 2. RSS scraping
-    print("\n[2/4] Scraping RSS sources...")
+    print("\n[2/5] Scraping RSS sources...")
     guardar_noticias_rss()
     print("✔ RSS scraping completed")
 
     # 3. Thematic classification
-    print("\n[3/4] Running thematic classification...")
+    print("\n[3/5] Running thematic classification...")
     clasificar_noticias()
     print("✔ Thematic classification completed")
 
     # 4. Risk vs Opportunity
-    print("\n[4/4] Evaluating risk vs opportunity...")
+    print("\n[4/5] Evaluating risk vs opportunity...")
     clasificar_riesgo_oportunidad_db()
     print("✔ Risk/Opportunity classification completed")
-
+    
+    # 5. Daily CSV summary
+    print("\n[5/5] Generating daily CSV summary...")
+    generar_resumen_diario()
+    print("✔ Daily CSV summary generated")
+    
     fin = datetime.now()
     duracion = fin - inicio
 
