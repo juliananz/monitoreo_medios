@@ -3,3 +3,9 @@ feedparser
 pyyaml
 matplotlib
 jupyter
+transformers
+torch
+streamlit
+python-dotenv
+pytest
+rapidfuzz

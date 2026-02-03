@@ -1,15 +1,9 @@
 @echo off
 
-REM === Activar Anaconda ===
-call "C:\Users\julia\anaconda3\Scripts\activate.bat"
+REM === Set project root for imports ===
+set PYTHONPATH=D:\DS\projects\monitoreo_medios
 
-REM === Activar entorno del proyecto ===
-call conda activate monitoreo_medios
+REM === Execute pipeline with Miniconda ===
+"D:\miniconda\condabin\conda.bat" run -n monitoreo_medios python D:\DS\projects\monitoreo_medios\main.py
 
-REM === Ir al directorio del proyecto ===
-cd /d D:\DS\projects\monitoreo_medios
-
-REM === Ejecutar pipeline ===
-python main.py
-
-REM === Fin ===
+REM === End ===

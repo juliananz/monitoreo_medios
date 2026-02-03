@@ -1,6 +1,13 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Jupyter
 notebooks/
@@ -10,9 +17,10 @@ notebooks/
 data/noticias_medios.db
 data/salidas/
 
-# Entornos
+# Environment (keep .env.example)
 .env
-.env.*
+.env.local
+.env.production
 
 # OS
 .DS_Store

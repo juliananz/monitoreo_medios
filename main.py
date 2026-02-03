@@ -2,20 +2,35 @@
 Main pipeline for media monitoring.
 
 Order:
-1. Initialize database (if needed)
-2. Scrape RSS sources
-3. Thematic classification
-4. Risk vs Opportunity classification
+1. Run pending migrations
+2. Initialize database (if needed)
+3. Scrape RSS sources
+4. Thematic classification
+5. Named Entity Recognition (NER)
+6. Risk vs Opportunity classification
+7. Daily outputs
+8. Daily aggregations
+
+Usage:
+    python main.py           # Run full pipeline
+    python main.py --backfill  # Backfill aggregations for all historical data
 """
 
-from datetime import datetime
-from pathlib import Path
+import logging
 import sys
+from datetime import datetime
 
-# --- PATH FIX ---
-BASE_DIR = Path(__file__).resolve().parent
-sys.path.append(str(BASE_DIR))
-# ----------------
+from config.settings import LOG_LEVEL
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+# Migrations
+from migrations.manager import run_pending_migrations
 
 # Storage
 from storage.database import crear_base_datos
@@ -25,51 +40,76 @@ from scrapers.scraper_rss import guardar_noticias_rss
 
 # Analysis
 from analisis.clasificar_noticias_db import clasificar_noticias
+from analisis.ner_entities import ejecutar_ner
 from analisis.clasificar_riesgo_oportunidad_db import clasificar_riesgo_oportunidad_db
 from analisis.resumen_diario_csv import generar_resumen_diario
+from analisis.agregacion import ejecutar_agregaciones, backfill_agregaciones
+
 
 def main():
     inicio = datetime.now()
 
-    print("=" * 70)
-    print("MEDIA MONITORING PIPELINE")
-    print(f"Start time: {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 70)
+    logger.info("=" * 60)
+    logger.info("MEDIA MONITORING PIPELINE")
+    logger.info(f"Start time: {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
 
-    # 1. Database
-    print("\n[1/5] Initializing database...")
+    # 1. Run pending migrations
+    logger.info("[1/8] Checking for pending migrations...")
+    run_pending_migrations()
+
+    # 2. Database
+    logger.info("[2/8] Initializing database...")
     crear_base_datos()
-    print("✔ Database ready")
 
-    # 2. RSS scraping
-    print("\n[2/5] Scraping RSS sources...")
+    # 3. RSS scraping
+    logger.info("[3/8] Scraping RSS sources...")
     guardar_noticias_rss()
-    print("✔ RSS scraping completed")
 
-    # 3. Thematic classification
-    print("\n[3/5] Running thematic classification...")
+    # 4. Thematic classification
+    logger.info("[4/8] Running thematic classification...")
     clasificar_noticias()
-    print("✔ Thematic classification completed")
 
-    # 4. Risk vs Opportunity
-    print("\n[4/5] Evaluating risk vs opportunity...")
+    # 5. Named Entity Recognition (NER)
+    logger.info("[5/8] Running NER (entity extraction)...")
+    ejecutar_ner()
+
+    # 6. Risk vs Opportunity
+    logger.info("[6/8] Evaluating risk vs opportunity...")
     clasificar_riesgo_oportunidad_db()
-    print("✔ Risk/Opportunity classification completed")
-    
-    # 5. Daily CSV summary
-    print("\n[5/5] Generating daily CSV summary...")
+
+    # 7. Daily CSV summary
+    logger.info("[7/8] Generating daily CSV summary...")
     generar_resumen_diario()
-    print("✔ Daily CSV summary generated")
-    
+
+    # 8. Daily aggregations
+    logger.info("[8/8] Computing daily aggregations...")
+    ejecutar_agregaciones()
+
     fin = datetime.now()
     duracion = fin - inicio
 
-    print("\n" + "=" * 70)
-    print("PIPELINE COMPLETED SUCCESSFULLY")
-    print(f"End time: {fin.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Duration: {duracion}")
-    print("=" * 70)
+    logger.info("=" * 60)
+    logger.info("PIPELINE COMPLETED SUCCESSFULLY")
+    logger.info(f"End time: {fin.strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"Duration: {duracion}")
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--backfill":
+        logger.info("=" * 60)
+        logger.info("AGGREGATION BACKFILL")
+        logger.info("=" * 60)
+
+        # Run migrations first to ensure tables exist
+        run_pending_migrations()
+
+        # Backfill all historical aggregations
+        backfill_agregaciones()
+
+        logger.info("=" * 60)
+        logger.info("BACKFILL COMPLETED")
+        logger.info("=" * 60)
+    else:
+        main()

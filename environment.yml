@@ -1,6 +1,7 @@
 name: monitoreo_medios
 channels:
   - conda-forge
+  - pytorch
 dependencies:
   - python=3.11
   - pandas
@@ -9,3 +10,10 @@ dependencies:
   - matplotlib
   - jupyter
   - sqlite
+  - pytorch
+  - pip
+  - pip:
+    - transformers
+    - streamlit
+    - python-dotenv
+    - pytest

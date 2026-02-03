@@ -1,19 +1,21 @@
-import yaml
+"""
+Keyword-based thematic classifier for news articles.
+"""
+
 import re
-from pathlib import Path
-
-
-BASE_DIR = Path(__file__).resolve().parents[1]
-KEYWORDS_PATH = BASE_DIR / "config" / "keywords.yaml"
+import yaml
+from config.settings import KEYWORDS_PATH
 
 
 def cargar_keywords():
+    """Load topic keywords from YAML config."""
     with open(KEYWORDS_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     return config.get("temas", {})
 
 
 def normalizar_texto(texto: str) -> str:
+    """Normalize text for keyword matching."""
     if not texto:
         return ""
     texto = texto.lower()
@@ -22,6 +24,14 @@ def normalizar_texto(texto: str) -> str:
 
 
 def clasificar_noticia(titulo: str, descripcion: str = "") -> dict:
+    """
+    Classify a news article by topic based on keyword matching.
+
+    Returns dict with:
+        - temas: list of detected topics
+        - score: number of topics matched
+        - relevante: 1 if any topic matched, 0 otherwise
+    """
     temas_keywords = cargar_keywords()
     texto = normalizar_texto(f"{titulo} {descripcion}")
 

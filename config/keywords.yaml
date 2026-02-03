@@ -26,8 +26,7 @@ temas:
     - t-mec
     - arancel
     - comercio exterior
-    
-  
+
 riesgo:
   - cierre
   - despidos
@@ -39,7 +38,7 @@ riesgo:
   - huelga
   - crisis
   - ciberataque
-    
+
 oportunidad:
   - inversion
   - expansion
@@ -50,3 +49,84 @@ oportunidad:
   - nearshoring
   - desarrollo
   - modernizacion
+
+# Geographic classification for NER
+geografia:
+  # Target state for "estatal" classification
+  estado_objetivo: coahuila
+
+  # Mexican states (triggers "nacional" if not estado_objetivo)
+  estados_mexico:
+    - aguascalientes
+    - baja california
+    - baja california sur
+    - campeche
+    - chiapas
+    - chihuahua
+    - coahuila
+    - colima
+    - cdmx
+    - ciudad de mexico
+    - durango
+    - guanajuato
+    - guerrero
+    - hidalgo
+    - jalisco
+    - mexico
+    - estado de mexico
+    - michoacan
+    - morelos
+    - nayarit
+    - nuevo leon
+    - oaxaca
+    - puebla
+    - queretaro
+    - quintana roo
+    - san luis potosi
+    - sinaloa
+    - sonora
+    - tabasco
+    - tamaulipas
+    - tlaxcala
+    - veracruz
+    - yucatan
+    - zacatecas
+
+  # Key countries (triggers "internacional" if not mexico)
+  paises_clave:
+    - mexico
+    - estados unidos
+    - usa
+    - eeuu
+    - china
+    - canada
+    - alemania
+    - japon
+    - corea del sur
+    - india
+    - brasil
+    - espana
+    - francia
+    - italia
+    - reino unido
+
+  # Key companies (triggers "requiere_analisis_profundo")
+  empresas_clave:
+    - gm
+    - general motors
+    - ford
+    - stellantis
+    - chrysler
+    - tesla
+    - amazon
+    - walmart
+    - bmw
+    - toyota
+    - nissan
+    - honda
+    - volkswagen
+    - kia
+    - hyundai
+    - caterpillar
+    - john deere
+    - honeywell
