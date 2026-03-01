@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ner_pipeline = pipeline(
     "ner",
     model="mrm8488/bert-spanish-cased-finetuned-ner",
-    aggregation_strategy="simple"
+    aggregation_strategy="simple",
 )
 
 
@@ -181,6 +181,10 @@ def ejecutar_ner():
         for noticia_id, titulo, descripcion in noticias:
             # Use both title and description for NER
             texto = f"{titulo} {descripcion or ''}"
+
+            # Truncate to BERT's 512 token limit using the pipeline's tokenizer
+            encoded = ner_pipeline.tokenizer(texto, truncation=True, max_length=512)
+            texto = ner_pipeline.tokenizer.decode(encoded["input_ids"], skip_special_tokens=True)
 
             entidades = ner_pipeline(texto)
 

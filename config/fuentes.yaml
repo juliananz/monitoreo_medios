@@ -1,21 +1,94 @@
+# =============================================================================
+# RSS Sources Configuration
+# =============================================================================
+# Metadata fields (tipo, region, tags) are optional and for reference only.
+# The scraper uses only 'nombre' and 'url'.
+#
+# Types: nacional, regional, industria, gobierno, agencia
+# Regions: nacional, norte, centro, sur, bajio, occidente
+# =============================================================================
+
 rss:
+  # ---------------------------------------------------------------------------
+  # REGIONAL (COAHUILA / NORTH)
+  # ---------------------------------------------------------------------------
   - nombre: "Vanguardia"
     url: "https://vanguardia.com.mx/rss.xml"
+    tipo: regional
+    region: norte
+    tags: [coahuila, saltillo]
 
   - nombre: "El Siglo de Torreón"
     url: "https://www.elsiglodetorreon.com.mx/index.xml"
+    tipo: regional
+    region: norte
+    tags: [coahuila, laguna]
 
+  - nombre: "El Norte"
+    url: "https://www.elnorte.com/rss/portada.xml"
+    tipo: regional
+    region: norte
+    tags: [nuevo_leon, monterrey]
+
+  # ---------------------------------------------------------------------------
+  # NATIONAL COVERAGE
+  # ---------------------------------------------------------------------------
+  - nombre: "Milenio"
+    url: "https://www.milenio.com/rss"
+    tipo: nacional
+    region: nacional
+    tags: [politica, nacional]
+
+  - nombre: "La Jornada"
+    url: "https://www.jornada.com.mx/rss/edicion.xml"
+    tipo: nacional
+    region: nacional
+    tags: [politica, izquierda]
+
+  # ---------------------------------------------------------------------------
+  # BUSINESS & INDUSTRY
+  # ---------------------------------------------------------------------------
   - nombre: "El Economista"
     url: "https://www.eleconomista.com.mx/rss/ultimas-noticias"
+    tipo: industria
+    region: nacional
+    tags: [economia, finanzas, negocios]
 
+  - nombre: "Expansión"
+    url: "https://expansion.mx/rss"
+    tipo: industria
+    region: nacional
+    tags: [negocios, tecnologia, emprendimiento]
+
+  - nombre: "Forbes México"
+    url: "https://www.forbes.com.mx/feed/"
+    tipo: industria
+    region: nacional
+    tags: [negocios, empresarios]
+
+  # ---------------------------------------------------------------------------
+  # REFORMA GROUP
+  # ---------------------------------------------------------------------------
   - nombre: "Reforma - Automotriz"
     url: "https://www.reforma.com/rss/automotriz.xml"
+    tipo: industria
+    region: nacional
+    tags: [automotriz, manufactura]
 
   - nombre: "Reforma - Internacional"
     url: "https://www.reforma.com/rss/internacional.xml"
+    tipo: nacional
+    region: nacional
+    tags: [internacional]
 
   - nombre: "Reforma - Nacional"
     url: "https://www.reforma.com/rss/nacional.xml"
+    tipo: nacional
+    region: nacional
+    tags: [politica, nacional]
 
   - nombre: "Reforma - Negocios"
     url: "https://www.reforma.com/rss/negocios.xml"
+    tipo: industria
+    region: nacional
+    tags: [negocios, empresas]
