@@ -56,13 +56,13 @@ def main():
     logger.info(f"Start time: {inicio.strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 60)
 
-    # 1. Run pending migrations
-    logger.info("[1/9] Checking for pending migrations...")
-    run_pending_migrations()
-
-    # 2. Database
-    logger.info("[2/9] Initializing database...")
+    # 1. Database
+    logger.info("[1/9] Initializing database...")
     crear_base_datos()
+
+    # 2. Run pending migrations
+    logger.info("[2/9] Checking for pending migrations...")
+    run_pending_migrations()
 
     # 3. RSS scraping
     logger.info("[3/9] Scraping RSS sources...")
@@ -115,7 +115,8 @@ if __name__ == "__main__":
         logger.info("AGGREGATION BACKFILL")
         logger.info("=" * 60)
 
-        # Run migrations first to ensure tables exist
+        # Ensure base schema exists, then apply any pending migrations
+        crear_base_datos()
         run_pending_migrations()
 
         # Backfill all historical aggregations

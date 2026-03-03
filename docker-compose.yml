@@ -1,0 +1,26 @@
+services:
+
+  pipeline:
+    build: .
+    volumes:
+      - sqlite_data:/app/data
+      - hf_cache:/root/.cache/huggingface
+    command: python main.py
+    # Run manually: docker compose run --rm pipeline
+    profiles:
+      - pipeline
+
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - sqlite_data:/app/data
+    command: >
+      streamlit run app/app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+
+volumes:
+  sqlite_data:
+  hf_cache:

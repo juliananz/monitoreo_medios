@@ -33,12 +33,6 @@ rss:
   # ---------------------------------------------------------------------------
   # NATIONAL COVERAGE
   # ---------------------------------------------------------------------------
-  - nombre: "Milenio"
-    url: "https://www.milenio.com/rss"
-    tipo: nacional
-    region: nacional
-    tags: [politica, nacional]
-
   - nombre: "La Jornada"
     url: "https://www.jornada.com.mx/rss/edicion.xml"
     tipo: nacional
@@ -59,12 +53,6 @@ rss:
     tipo: industria
     region: nacional
     tags: [negocios, tecnologia, emprendimiento]
-
-  - nombre: "Forbes México"
-    url: "https://www.forbes.com.mx/feed/"
-    tipo: industria
-    region: nacional
-    tags: [negocios, empresarios]
 
   # ---------------------------------------------------------------------------
   # REFORMA GROUP

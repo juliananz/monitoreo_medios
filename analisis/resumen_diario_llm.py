@@ -13,7 +13,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from analisis.utils import get_db_connection
+from analisis.utils import get_db_connection, clasificar_tipo
 
 logger = logging.getLogger(__name__)
 
@@ -191,15 +191,6 @@ def get_highlighted_news(fecha: date, limit: int = 3) -> List[Dict]:
             ORDER BY score DESC, fecha DESC
             LIMIT ?
         """, (fecha.isoformat(), limit))
-
-        def clasificar_tipo(riesgo, oportunidad):
-            if riesgo and oportunidad:
-                return "mixto"
-            elif riesgo:
-                return "riesgo"
-            elif oportunidad:
-                return "oportunidad"
-            return "neutro"
 
         return [
             {

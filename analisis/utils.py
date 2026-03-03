@@ -2,7 +2,9 @@
 Shared utilities for analysis modules.
 """
 
+import re
 import sqlite3
+import unicodedata
 from contextlib import contextmanager
 from config.settings import DB_PATH
 
@@ -15,6 +17,25 @@ def get_db_connection():
         yield conn
     finally:
         conn.close()
+
+
+def normalizar_texto(texto: str) -> str:
+    """Normalize text for keyword matching (strips punctuation, keeps accents)."""
+    if not texto:
+        return ""
+    texto = texto.lower()
+    texto = re.sub(r"[^\w\s]", " ", texto)
+    return texto
+
+
+def normalizar_entidad(texto: str) -> str:
+    """Normalize text for entity lookups (strips accents, case-insensitive)."""
+    if not texto:
+        return ""
+    texto = texto.lower().strip()
+    texto = unicodedata.normalize("NFD", texto)
+    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+    return texto
 
 
 def clasificar_tipo(riesgo: int, oportunidad: int) -> str:

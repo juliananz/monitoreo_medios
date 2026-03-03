@@ -1,0 +1,14 @@
+.git/
+.claude/
+__pycache__/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.env
+data/
+output/
+*.db
+notebooks/
+docs/
+.pytest_cache/
+**/.pytest_cache/

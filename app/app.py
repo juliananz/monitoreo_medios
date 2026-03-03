@@ -79,25 +79,32 @@ def logout():
 @st.cache_data
 def cargar_datos():
     """Load relevant news from database."""
-    with get_db_connection() as conn:
-        df = pd.read_sql_query("""
-            SELECT
-                fecha,
-                medio,
-                titulo,
-                url,
-                personas,
-                organizaciones,
-                lugares,
-                nivel_geografico,
-                requiere_analisis_profundo,
-                riesgo,
-                oportunidad
-            FROM noticias
-            WHERE relevante = 1
-            ORDER BY fecha DESC
-        """, conn)
-    return df
+    try:
+        with get_db_connection() as conn:
+            df = pd.read_sql_query("""
+                SELECT
+                    fecha,
+                    medio,
+                    titulo,
+                    url,
+                    personas,
+                    organizaciones,
+                    lugares,
+                    nivel_geografico,
+                    requiere_analisis_profundo,
+                    riesgo,
+                    oportunidad
+                FROM noticias
+                WHERE relevante = 1
+                ORDER BY fecha DESC
+            """, conn)
+        return df
+    except Exception:
+        return pd.DataFrame(columns=[
+            "fecha", "medio", "titulo", "url", "personas",
+            "organizaciones", "lugares", "nivel_geografico",
+            "requiere_analisis_profundo", "riesgo", "oportunidad",
+        ])
 
 
 @st.cache_data

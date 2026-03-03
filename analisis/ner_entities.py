@@ -5,32 +5,27 @@ Now uses normalized entidades and noticia_entidad tables.
 """
 
 import logging
-import unicodedata
 import yaml
 from pathlib import Path
 from transformers import pipeline
 
 from config.settings import DB_PATH, KEYWORDS_PATH
-from analisis.utils import get_db_connection
+from analisis.utils import get_db_connection, normalizar_entidad
 
 logger = logging.getLogger(__name__)
 
-# NER Model (loaded once at module level)
-ner_pipeline = pipeline(
-    "ner",
-    model="mrm8488/bert-spanish-cased-finetuned-ner",
-    aggregation_strategy="simple",
-)
+_ner_pipeline = None
 
 
-def normalizar_texto(texto: str) -> str:
-    """Normalize text for lookups."""
-    if not texto:
-        return ""
-    texto = texto.lower().strip()
-    texto = unicodedata.normalize("NFD", texto)
-    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
-    return texto
+def _get_ner_pipeline():
+    global _ner_pipeline
+    if _ner_pipeline is None:
+        _ner_pipeline = pipeline(
+            "ner",
+            model="mrm8488/bert-spanish-cased-finetuned-ner",
+            aggregation_strategy="simple",
+        )
+    return _ner_pipeline
 
 
 def cargar_config_geografia():
@@ -41,9 +36,9 @@ def cargar_config_geografia():
     geo = config.get("geografia", {})
     return {
         "estado_objetivo": geo.get("estado_objetivo", "coahuila").lower(),
-        "estados_mexico": [normalizar_texto(e) for e in geo.get("estados_mexico", [])],
-        "paises_clave": [normalizar_texto(p) for p in geo.get("paises_clave", [])],
-        "empresas_clave": [normalizar_texto(c) for c in geo.get("empresas_clave", [])],
+        "estados_mexico": [normalizar_entidad(e) for e in geo.get("estados_mexico", [])],
+        "paises_clave": [normalizar_entidad(p) for p in geo.get("paises_clave", [])],
+        "empresas_clave": [normalizar_entidad(c) for c in geo.get("empresas_clave", [])],
     }
 
 
@@ -52,7 +47,7 @@ def get_or_create_entidad(cursor, nombre: str, tipo: str, alias_map: dict) -> in
     Get entity ID from alias map, or create new entity if not found.
     Returns entity ID.
     """
-    nombre_norm = normalizar_texto(nombre)
+    nombre_norm = normalizar_entidad(nombre)
 
     # Check alias map first
     if nombre_norm in alias_map:
@@ -93,7 +88,7 @@ def get_or_create_entidad(cursor, nombre: str, tipo: str, alias_map: dict) -> in
 
 def inferir_nivel_geografico(lugares: set, config: dict) -> str:
     """Infer geographic level from detected locations."""
-    lugares_norm = [normalizar_texto(l) for l in lugares]
+    lugares_norm = [normalizar_entidad(l) for l in lugares]
 
     estado_objetivo = config["estado_objetivo"]
     estados_mexico = config["estados_mexico"]
@@ -118,7 +113,7 @@ def inferir_nivel_geografico(lugares: set, config: dict) -> str:
 def get_region_id(cursor, lugares: set, region_map: dict) -> int:
     """Get region ID for the most relevant location."""
     for lugar in lugares:
-        lugar_norm = normalizar_texto(lugar)
+        lugar_norm = normalizar_entidad(lugar)
         if lugar_norm in region_map:
             return region_map[lugar_norm]
     return None
@@ -126,8 +121,8 @@ def get_region_id(cursor, lugares: set, region_map: dict) -> int:
 
 def requiere_analisis(lugares: set, organizaciones: set, config: dict) -> int:
     """Determine if news requires deep analysis."""
-    org_norm = [normalizar_texto(o) for o in organizaciones]
-    lug_norm = [normalizar_texto(l) for l in lugares]
+    org_norm = [normalizar_entidad(o) for o in organizaciones]
+    lug_norm = [normalizar_entidad(l) for l in lugares]
 
     empresas_clave = config["empresas_clave"]
     paises_clave = config["paises_clave"]
@@ -183,10 +178,11 @@ def ejecutar_ner():
             texto = f"{titulo} {descripcion or ''}"
 
             # Truncate to BERT's 512 token limit using the pipeline's tokenizer
-            encoded = ner_pipeline.tokenizer(texto, truncation=True, max_length=512)
-            texto = ner_pipeline.tokenizer.decode(encoded["input_ids"], skip_special_tokens=True)
+            nlp = _get_ner_pipeline()
+            encoded = nlp.tokenizer(texto, truncation=True, max_length=512)
+            texto = nlp.tokenizer.decode(encoded["input_ids"], skip_special_tokens=True)
 
-            entidades = ner_pipeline(texto)
+            entidades = nlp(texto)
 
             personas = set()
             organizaciones = set()

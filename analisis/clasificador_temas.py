@@ -2,9 +2,9 @@
 Keyword-based thematic classifier for news articles.
 """
 
-import re
 import yaml
 from config.settings import KEYWORDS_PATH
+from analisis.utils import normalizar_texto
 
 
 def cargar_keywords():
@@ -12,15 +12,6 @@ def cargar_keywords():
     with open(KEYWORDS_PATH, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     return config.get("temas", {})
-
-
-def normalizar_texto(texto: str) -> str:
-    """Normalize text for keyword matching."""
-    if not texto:
-        return ""
-    texto = texto.lower()
-    texto = re.sub(r"[^\w\s]", " ", texto)
-    return texto
 
 
 def clasificar_noticia(titulo: str, descripcion: str = "") -> dict:
