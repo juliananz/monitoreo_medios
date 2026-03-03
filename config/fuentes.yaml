@@ -10,6 +10,45 @@
 
 rss:
   # ---------------------------------------------------------------------------
+  # GOOGLE NEWS - MUNICIPIOS COAHUILA (baja cobertura)
+  # ---------------------------------------------------------------------------
+  - nombre: "Google News - San Juan de Sabinas"
+    url: "https://news.google.com/rss/search?q=%22San%20Juan%20de%20Sabinas%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: carbonífera
+    tags: [coahuila, san_juan_de_sabinas, carbonífera]
+
+  - nombre: "Google News - Allende Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Allende%22%20Coahuila%20-Guanajuato%20-%22Nuevo%20Le%C3%B3n%22%20-Chihuahua&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, allende, norte]
+
+  - nombre: "Google News - Cuatro Ciénegas"
+    url: "https://news.google.com/rss/search?q=%22Cuatro%20Ci%C3%A9negas%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, cuatro_cienégas, centro]
+
+  - nombre: "Google News - Zaragoza Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Zaragoza%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, zaragoza, norte]
+
+  - nombre: "Google News - Castaños"
+    url: "https://news.google.com/rss/search?q=%22Casta%C3%B1os%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, castaños, centro]
+
+  - nombre: "Google News - San Buenaventura"
+    url: "https://news.google.com/rss/search?q=%22San%20Buenaventura%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, san_buenaventura, centro]
+
+  # ---------------------------------------------------------------------------
   # REGIONAL (COAHUILA / NORTH)
   # ---------------------------------------------------------------------------
   - nombre: "Vanguardia"
