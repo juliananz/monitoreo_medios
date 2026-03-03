@@ -48,6 +48,156 @@ rss:
     region: centro
     tags: [coahuila, san_buenaventura, centro]
 
+  - nombre: "Google News - Juárez Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Ju%C3%A1rez%22%20Coahuila%20-%22Ciudad%20Ju%C3%A1rez%22%20-Chihuahua&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: carbonífera
+    tags: [coahuila, juárez, carbonífera]
+
+  - nombre: "Google News - Múzquiz"
+    url: "https://news.google.com/rss/search?q=%22M%C3%BAzquiz%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: carbonífera
+    tags: [coahuila, múzquiz, carbonífera]
+
+  - nombre: "Google News - Progreso Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Progreso%22%20Coahuila%20Carbon%C3%ADfera&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: carbonífera
+    tags: [coahuila, progreso, carbonífera]
+
+  - nombre: "Google News - Sabinas"
+    url: "https://news.google.com/rss/search?q=%22Sabinas%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: carbonífera
+    tags: [coahuila, sabinas, carbonífera]
+
+  - nombre: "Google News - Abasolo"
+    url: "https://news.google.com/rss/search?q=%22municipio%20de%20Abasolo%22%20OR%20%22Abasolo%20Coahuila%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, abasolo, centro]
+
+  - nombre: "Google News - Candela"
+    url: "https://news.google.com/rss/search?q=%22Candela%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, candela, centro]
+
+  - nombre: "Google News - Escobedo"
+    url: "https://news.google.com/rss/search?q=%22municipio%20de%20Escobedo%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, escobedo, centro]
+
+  - nombre: "Google News - Frontera Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Frontera%22%20Coahuila%20municipio&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, frontera, centro]
+
+  - nombre: "Google News - Lamadrid"
+    url: "https://news.google.com/rss/search?q=%22Lamadrid%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, lamadrid, centro]
+
+  - nombre: "Google News - Monclova"
+    url: "https://news.google.com/rss/search?q=%22Monclova%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, monclova, centro]
+
+  - nombre: "Google News - Nadadores"
+    url: "https://news.google.com/rss/search?q=%22Nadadores%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, nadadores, centro]
+
+  - nombre: "Google News - Ocampo Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Ocampo%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, ocampo, centro]
+
+  - nombre: "Google News - Sacramento"
+    url: "https://news.google.com/rss/search?q=%22Sacramento%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, sacramento, centro]
+
+  - nombre: "Google News - Sierra Mojada"
+    url: "https://news.google.com/rss/search?q=%22Sierra%20Mojada%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: centro
+    tags: [coahuila, sierra_mojada, centro]
+
+  - nombre: "Google News - Ciudad Acuña"
+    url: "https://news.google.com/rss/search?q=%22Ciudad%20Acu%C3%B1a%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, acuña, norte]
+
+  - nombre: "Google News - Guerrero Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Guerrero%22%20Coahuila%20municipio&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, guerrero, norte]
+
+  - nombre: "Google News - Hidalgo Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Hidalgo%22%20Coahuila%20municipio%20-estado&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, hidalgo, norte]
+
+  - nombre: "Google News - Jiménez Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Jim%C3%A9nez%22%20Coahuila%20-Chihuahua&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, jiménez, norte]
+
+  - nombre: "Google News - Morelos Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Morelos%22%20Coahuila%20municipio&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, morelos, norte]
+
+  - nombre: "Google News - Nava Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Nava%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, nava, norte]
+
+  - nombre: "Google News - Piedras Negras"
+    url: "https://news.google.com/rss/search?q=%22Piedras%20Negras%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, piedras_negras, norte]
+
+  - nombre: "Google News - Villa Unión"
+    url: "https://news.google.com/rss/search?q=%22Villa%20Uni%C3%B3n%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: norte
+    tags: [coahuila, villa_unión, norte]
+
+  - nombre: "Google News - Arteaga Coahuila"
+    url: "https://news.google.com/rss/search?q=%22Arteaga%22%20Coahuila%20-Michoac%C3%A1n&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: sureste
+    tags: [coahuila, arteaga, sureste]
+
+  - nombre: "Google News - General Cepeda"
+    url: "https://news.google.com/rss/search?q=%22General%20Cepeda%22&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: sureste
+    tags: [coahuila, general_cepeda, sureste]
+
+  - nombre: "Google News - Parras"
+    url: "https://news.google.com/rss/search?q=%22Parras%20de%20la%20Fuente%22%20OR%20%22Parras%22%20Coahuila&hl=es-419&gl=MX&ceid=MX:es-419"
+    tipo: google_news
+    region: sureste
+    tags: [coahuila, parras, sureste]
+
   # ---------------------------------------------------------------------------
   # REGIONAL (COAHUILA / NORTH)
   # ---------------------------------------------------------------------------
