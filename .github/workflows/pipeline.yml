@@ -1,0 +1,43 @@
+name: Pipeline Diario
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # 12:00 UTC = 06:00 CST (hora Coahuila)
+  workflow_dispatch:         # también se puede correr manualmente desde GitHub
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install torch CPU
+        run: pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DB_PATH: data/noticias_medios.db
+          OUTPUT_DIR: data/salidas
+        run: python main.py
+
+      - name: Commit DB y salidas actualizadas
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/noticias_medios.db data/salidas/ output/ || true
+          git diff --cached --quiet || git commit -m "chore: pipeline diario $(date -u +%Y-%m-%d)"
+          git push

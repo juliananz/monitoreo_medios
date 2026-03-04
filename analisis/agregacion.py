@@ -12,7 +12,7 @@ All functions use INSERT OR REPLACE for idempotent updates.
 """
 
 import logging
-from datetime import date, datetime
+from datetime import date
 from typing import List, Optional
 
 from analisis.utils import get_db_connection
@@ -269,19 +269,19 @@ def ejecutar_agregaciones(fecha: Optional[date] = None) -> None:
     logger.info(f"Computing aggregations for {fecha.isoformat()}...")
 
     calcular_agregacion_diaria(fecha)
-    logger.debug(f"  - Global aggregation done")
+    logger.debug("  - Global aggregation done")
 
     calcular_agregacion_tema_diaria(fecha)
-    logger.debug(f"  - Topic aggregation done")
+    logger.debug("  - Topic aggregation done")
 
     calcular_agregacion_region_diaria(fecha)
-    logger.debug(f"  - Region aggregation done")
+    logger.debug("  - Region aggregation done")
 
     calcular_agregacion_entidad_diaria(fecha)
-    logger.debug(f"  - Entity aggregation done")
+    logger.debug("  - Entity aggregation done")
 
     calcular_agregacion_medio_diaria(fecha)
-    logger.debug(f"  - Media aggregation done")
+    logger.debug("  - Media aggregation done")
 
     logger.info(f"Aggregations completed for {fecha.isoformat()}")
 

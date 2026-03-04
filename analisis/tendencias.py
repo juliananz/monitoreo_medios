@@ -11,7 +11,7 @@ All functions read from pre-computed aggregation tables for fast performance.
 
 import logging
 from datetime import date, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 

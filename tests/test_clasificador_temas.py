@@ -2,7 +2,6 @@
 Unit tests for thematic classifier.
 """
 
-import pytest
 from analisis.clasificador_temas import clasificar_noticia, normalizar_texto
 
 
@@ -10,7 +9,7 @@ class TestNormalizarTexto:
     """Tests for text normalization."""
 
     def test_lowercase(self):
-        assert normalizar_texto("INVERSIÓN") == "inversión"
+        assert normalizar_texto("INVERSIÓN") == "inversion"
 
     def test_removes_punctuation(self):
         result = normalizar_texto("¡Hola, mundo!")

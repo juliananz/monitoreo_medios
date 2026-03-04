@@ -3,12 +3,17 @@ Streamlit dashboard for media monitoring visualization.
 Includes basic password authentication and trend analysis.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure repo root is on the path when running from Streamlit Community Cloud
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import os
 import hashlib
 import pandas as pd
 import streamlit as st
 
-from config.settings import DB_PATH
 from analisis.utils import get_db_connection, clasificar_tipo
 from analisis.tendencias import (
     get_tendencia_diaria,
@@ -22,8 +27,7 @@ from analisis.tendencias import (
 from analisis.queries import (
     get_top_entidades_periodo,
     get_entidades_clave_en_riesgo,
-    get_conteo_por_region,
-    get_temas_activos
+    get_conteo_por_region
 )
 
 # =============================================================================
@@ -455,7 +459,7 @@ with tab_tendencias:
                         'total_oportunidad': 'Oportunidades'
                     })
                 )
-        except Exception as e:
+        except Exception:
             st.info("Datos semanales no disponibles")
 
     with col_mes:
@@ -470,7 +474,7 @@ with tab_tendencias:
                         'total_oportunidad': 'Oportunidades'
                     })
                 )
-        except Exception as e:
+        except Exception:
             st.info("Datos mensuales no disponibles")
 
     st.divider()
@@ -488,7 +492,7 @@ with tab_tendencias:
             )
         else:
             st.info("No se detectaron anomalias en los ultimos 30 dias")
-    except Exception as e:
+    except Exception:
         st.info("Deteccion de anomalias no disponible")
 
 # -----------------------------------------------------------------------------
@@ -540,7 +544,7 @@ with tab_entidades:
                 ].set_index('fecha')['menciones']
 
                 st.line_chart(df_entidad_filtrada)
-    except Exception as e:
+    except Exception:
         st.info("Tendencias de entidades no disponibles")
 
     st.divider()
@@ -558,7 +562,7 @@ with tab_entidades:
             )
         else:
             st.info("No hay entidades clave en contexto de riesgo")
-    except Exception as e:
+    except Exception:
         st.info("Datos de entidades en riesgo no disponibles")
 
 # -----------------------------------------------------------------------------
@@ -588,7 +592,7 @@ with tab_regiones:
             )
         else:
             st.info("No hay datos de regiones disponibles")
-    except Exception as e:
+    except Exception:
         st.info("Datos de regiones no disponibles")
 
     st.divider()

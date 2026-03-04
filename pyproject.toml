@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 120
+exclude = [
+    "notebooks/",
+    "output/",
+    "data/",
+    ".claude/",
+    "migrations/",
+]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = [
+    "E501",   # line too long — handled by line-length setting
+]
+per-file-ignores = { "**/__init__.py" = ["F401"], "main.py" = ["E402"] }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

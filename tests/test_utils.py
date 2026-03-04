@@ -2,7 +2,6 @@
 Unit tests for shared utilities.
 """
 
-import pytest
 from analisis.utils import clasificar_tipo
 
 

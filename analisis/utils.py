@@ -20,10 +20,12 @@ def get_db_connection():
 
 
 def normalizar_texto(texto: str) -> str:
-    """Normalize text for keyword matching (strips punctuation, keeps accents)."""
+    """Normalize text for keyword matching (strips punctuation and accents)."""
     if not texto:
         return ""
     texto = texto.lower()
+    texto = unicodedata.normalize("NFD", texto)
+    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     texto = re.sub(r"[^\w\s]", " ", texto)
     return texto
 

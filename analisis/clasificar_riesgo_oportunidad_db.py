@@ -45,7 +45,7 @@ def clasificar_riesgo_oportunidad_db():
 
         conn.commit()
 
-    logger.info(f"Risk/opportunity classification completed.")
+    logger.info("Risk/opportunity classification completed.")
     logger.info(f"  Risks detected: {riesgos_count}")
     logger.info(f"  Opportunities detected: {oportunidades_count}")
 

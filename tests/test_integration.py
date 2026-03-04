@@ -9,7 +9,7 @@ import sqlite3
 import tempfile
 import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -78,6 +78,11 @@ class TestClassificationIntegration:
 
         conn = sqlite3.connect(mock_db_path)
         cursor = conn.cursor()
+
+        # Seed temas required by clasificar_noticias_db
+        for nombre in ("inversion", "empleo", "industria", "comercio_exterior"):
+            cursor.execute("INSERT OR IGNORE INTO temas (nombre) VALUES (?)", (nombre,))
+        conn.commit()
 
         # Insert test news
         test_news = [

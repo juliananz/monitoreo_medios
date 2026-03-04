@@ -21,6 +21,16 @@ services:
       --server.port 8501
       --server.address 0.0.0.0
 
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - sqlite_data:/app/data
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DB_PATH=/app/data/noticias_medios.db
+
 volumes:
   sqlite_data:
   hf_cache:

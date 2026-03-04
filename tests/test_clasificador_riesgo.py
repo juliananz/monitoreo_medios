@@ -2,7 +2,6 @@
 Unit tests for risk/opportunity classifier.
 """
 
-import pytest
 from analisis.clasificador_riesgo_oportunidad import (
     clasificar_riesgo_oportunidad,
     normalizar

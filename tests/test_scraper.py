@@ -2,7 +2,6 @@
 Unit tests for RSS scraper utilities.
 """
 
-import pytest
 from datetime import datetime
 from scrapers.scraper_rss import parse_fecha
 

@@ -32,9 +32,9 @@ KEYWORDS_PATH = CONFIG_DIR / "keywords.yaml"
 RSS_MAX_RETRIES = int(os.getenv("RSS_MAX_RETRIES", "3"))
 RSS_RETRY_DELAY = int(os.getenv("RSS_RETRY_DELAY", "5"))
 
-# Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+# GROQ API
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

@@ -6,7 +6,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-from config.settings import DB_PATH, OUTPUT_DIR
+from config.settings import OUTPUT_DIR
 from analisis.utils import get_db_connection, clasificar_tipo
 
 logger = logging.getLogger(__name__)

@@ -88,7 +88,7 @@ def validate_feed(url: str, nombre: str = "Test") -> dict:
                     entry_date = parsedate_to_datetime(date_str)
                     if entry_date.replace(tzinfo=None) > week_ago:
                         recent_count += 1
-                except:
+                except Exception:
                     pass
 
             if entry.get("summary", "").strip() or entry.get("description", "").strip():
@@ -190,7 +190,7 @@ def main():
         return
 
     print(f"\n{'='*60}")
-    print(f"RSS Source Validation Report")
+    print("RSS Source Validation Report")
     print(f"{'='*60}")
     print(f"Sources: {len(sources)}")
     if args.tipo:

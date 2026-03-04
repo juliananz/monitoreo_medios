@@ -1,10 +1,10 @@
 """
 Named Entity Recognition (NER) for news articles.
 
-Primary:  Google Gemini API (batched, 5 articles per request).
+Primary:  GROQ API (batched, 5 articles per request).
 Fallback: Spanish BERT model (mrm8488/bert-spanish-cased-finetuned-ner).
 
-Falls back to BERT per batch if Gemini is unavailable or fails.
+Falls back to BERT per batch if GROQ is unavailable or fails.
 """
 
 import json
@@ -12,22 +12,21 @@ import logging
 import re
 import time
 import yaml
-from pathlib import Path
 from transformers import pipeline
 
-from config.settings import DB_PATH, KEYWORDS_PATH, GEMINI_API_KEY, GEMINI_MODEL
+from config.settings import KEYWORDS_PATH, GROQ_API_KEY, GROQ_MODEL
 from analisis.utils import get_db_connection, normalizar_entidad
 
 logger = logging.getLogger(__name__)
 
-GEMINI_BATCH_SIZE = 5
+GROQ_BATCH_SIZE = 5
 
 # ---------------------------------------------------------------------------
 # Model initialization (lazy)
 # ---------------------------------------------------------------------------
 
 _ner_pipeline = None
-_gemini_model = None
+_groq_client = None
 
 
 def _get_bert_pipeline():
@@ -41,23 +40,23 @@ def _get_bert_pipeline():
     return _ner_pipeline
 
 
-def _get_gemini_model():
-    global _gemini_model
-    if _gemini_model is None:
-        if not GEMINI_API_KEY:
+def _get_groq_client():
+    global _groq_client
+    if _groq_client is None:
+        if not GROQ_API_KEY:
             return None
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            _gemini_model = genai.GenerativeModel(GEMINI_MODEL)
+            from groq import Groq
+
+            _groq_client = Groq(api_key=GROQ_API_KEY)
         except Exception as e:
-            logger.warning(f"Could not initialize Gemini: {e}")
+            logger.warning(f"Could not initialize GROQ client: {e}")
             return None
-    return _gemini_model
+    return _groq_client
 
 
 # ---------------------------------------------------------------------------
-# Gemini NER (batched)
+# GROQ NER (batched)
 # ---------------------------------------------------------------------------
 
 _PROMPT_NER = """Eres un extractor de entidades para noticias de Coahuila, México.
@@ -81,13 +80,13 @@ NOTICIAS:
 JSON:"""
 
 
-def _extraer_con_gemini(batch: list) -> dict:
+def _extraer_con_groq(batch: list) -> dict:
     """
-    Extract entities for a batch of (id, titulo, descripcion) tuples via Gemini.
+    Extract entities for a batch of (id, titulo, descripcion) tuples via GROQ.
     Returns dict {noticia_id: {personas, organizaciones, lugares}} or empty on failure.
     """
-    model = _get_gemini_model()
-    if model is None:
+    client = _get_groq_client()
+    if client is None:
         return {}
 
     noticias_text = "\n\n".join(
@@ -98,11 +97,13 @@ def _extraer_con_gemini(batch: list) -> dict:
     prompt = _PROMPT_NER.format(noticias_text=noticias_text)
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.0, "max_output_tokens": 1024},
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            max_tokens=1024,
         )
-        raw = response.text.strip()
+        raw = response.choices[0].message.content.strip()
 
         # Strip markdown code fences if present
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
@@ -123,7 +124,7 @@ def _extraer_con_gemini(batch: list) -> dict:
         return result
 
     except Exception as e:
-        logger.warning(f"Gemini NER failed for batch: {e}")
+        logger.warning(f"GROQ NER failed for batch: {e}")
         return {}
 
 
@@ -213,7 +214,7 @@ def get_or_create_entidad(cursor, nombre: str, tipo: str, alias_map: dict) -> in
 
 
 def inferir_nivel_geografico(lugares: set, config: dict) -> str:
-    lugares_norm = [normalizar_entidad(l) for l in lugares]
+    lugares_norm = [normalizar_entidad(loc) for loc in lugares]
     estado_objetivo = config["estado_objetivo"]
     estados_mexico = config["estados_mexico"]
     paises_clave = config["paises_clave"]
@@ -237,8 +238,8 @@ def get_region_id(cursor, lugares: set, region_map: dict) -> int:
 
 def requiere_analisis(lugares: set, organizaciones: set, config: dict) -> int:
     org_norm = [normalizar_entidad(o) for o in organizaciones]
-    lug_norm = [normalizar_entidad(l) for l in lugares]
-    if any(e in org_norm for e in config["empresas_clave"]):
+    lug_norm = [normalizar_entidad(loc) for loc in lugares]
+    if any(empresa in org for org in org_norm for empresa in config["empresas_clave"]):
         return 1
     paises_no_mexico = [p for p in config["paises_clave"] if p not in ("mexico", "méxico")]
     if any(p in lug_norm for p in paises_no_mexico):
@@ -251,14 +252,14 @@ def requiere_analisis(lugares: set, organizaciones: set, config: dict) -> int:
 # ---------------------------------------------------------------------------
 
 def ejecutar_ner():
-    """Run NER on all unprocessed relevant news. Uses Gemini if API key is set, else BERT."""
+    """Run NER on all unprocessed relevant news. Uses GROQ if API key is set, else BERT."""
     geo_config = cargar_config_geografia()
-    use_gemini = bool(GEMINI_API_KEY)
+    use_groq = bool(GROQ_API_KEY)
 
-    if use_gemini:
-        logger.info(f"NER mode: Gemini ({GEMINI_MODEL}) with BERT fallback")
+    if use_groq:
+        logger.info(f"NER mode: GROQ ({GROQ_MODEL}) with BERT fallback")
     else:
-        logger.info("NER mode: BERT only (set GEMINI_API_KEY to enable Gemini)")
+        logger.info("NER mode: BERT only (set GROQ_API_KEY to enable GROQ)")
 
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -282,20 +283,20 @@ def ejecutar_ner():
         links_created = 0
 
         # Process in batches
-        for batch_start in range(0, len(noticias), GEMINI_BATCH_SIZE):
-            batch = noticias[batch_start: batch_start + GEMINI_BATCH_SIZE]
+        for batch_start in range(0, len(noticias), GROQ_BATCH_SIZE):
+            batch = noticias[batch_start: batch_start + GROQ_BATCH_SIZE]
 
-            # Try Gemini first, fall back to BERT if it fails
-            if use_gemini:
-                entities_by_id = _extraer_con_gemini(batch)
+            # Try GROQ first, fall back to BERT if it fails
+            if use_groq:
+                entities_by_id = _extraer_con_groq(batch)
                 if len(entities_by_id) < len(batch):
-                    # Gemini missed some articles — process missing ones with BERT
+                    # GROQ missed some articles — process missing ones with BERT
                     missing = [row for row in batch if row[0] not in entities_by_id]
                     if missing:
                         logger.debug(f"BERT fallback for {len(missing)} articles in batch")
                         entities_by_id.update(_extraer_con_bert(missing))
-                # Rate limit: stay safely under 15 RPM
-                time.sleep(4)
+                # Rate limit: stay safely under 30 RPM
+                time.sleep(2)
             else:
                 entities_by_id = _extraer_con_bert(batch)
 
