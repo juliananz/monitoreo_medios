@@ -29,6 +29,7 @@ from analisis.queries import (
     get_entidades_clave_en_riesgo,
     get_conteo_por_region
 )
+from config.settings import DB_PATH
 
 # =============================================================================
 # AUTHENTICATION
@@ -103,7 +104,8 @@ def cargar_datos():
                 ORDER BY fecha DESC
             """, conn)
         return df
-    except Exception:
+    except Exception as e:
+        st.error(f"Error cargando datos: {e}\nDB_PATH: {DB_PATH}\nExiste: {Path(DB_PATH).exists()}")
         return pd.DataFrame(columns=[
             "fecha", "medio", "titulo", "url", "personas",
             "organizaciones", "lugares", "nivel_geografico",
