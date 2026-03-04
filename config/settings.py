@@ -32,6 +32,10 @@ KEYWORDS_PATH = CONFIG_DIR / "keywords.yaml"
 RSS_MAX_RETRIES = int(os.getenv("RSS_MAX_RETRIES", "3"))
 RSS_RETRY_DELAY = int(os.getenv("RSS_RETRY_DELAY", "5"))
 
+# Gemini API
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
