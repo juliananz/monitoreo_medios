@@ -85,18 +85,47 @@ def _cargar_regiones_xlsx() -> tuple[dict, list]:
 # Load at module level — raises clearly if xlsx is missing or malformed
 REGIONES_COAHUILA, REGION_ORDER = _cargar_regiones_xlsx()
 
+# Secondary keyword layer for Carbonífera: fires only when no municipality
+# matched AND nivel_geografico is "estatal" or "nacional".
+CARBONIFERA_KEYWORDS = [
+    "carbon",
+    "carbonera",
+    "minera",
+    "mina",
+    "ahmsa",
+    "altos hornos",
+    "hulla",
+    "coque",
+    "minero",
+    "extraccion",
+    "yacimiento",
+    "sabinas basin",
+    "cuenca carbonifera",
+]
 
-def detect_coahuila_region(titulo: str, lugares: str) -> Optional[str]:
+_CARBONIFERA_GEO_LEVELS = {"estatal", "nacional"}
+
+
+def detect_coahuila_region(titulo: str, lugares: str,
+                           nivel_geografico: str = "") -> Optional[str]:
     """
-    Detect Coahuila sub-region from article titulo and lugares fields.
+    Detect Coahuila sub-region from article fields.
 
-    Normalizes both fields (lowercase, strip accents), then checks each
-    region's municipality keywords as substrings. Returns the first matching
-    region name, or None if no municipality is found.
+    Priority 1 — Municipality match (all regions):
+        Normalizes titulo + lugares and checks each region's municipality
+        keywords as substrings. Returns the first match found.
+
+    Priority 2 — Carbonífera topic keywords (secondary layer):
+        Only attempted when:
+          - No municipality matched in Priority 1, AND
+          - nivel_geografico is "estatal" or "nacional"
+        Checks CARBONIFERA_KEYWORDS against the normalized titulo.
+        Returns "Carbonífera" on the first keyword hit.
 
     Args:
-        titulo:  article headline
-        lugares: NER-extracted locations (may be empty/NaN)
+        titulo:           article headline
+        lugares:          NER-extracted locations (may be empty/NaN)
+        nivel_geografico: geographic scope label from the pipeline
 
     Returns:
         Region name string or None
@@ -104,10 +133,19 @@ def detect_coahuila_region(titulo: str, lugares: str) -> Optional[str]:
     lugares_clean = lugares if pd.notna(lugares) and str(lugares) not in ("nan", "") else ""
     text = _norm(titulo) + " " + _norm(lugares_clean)
 
+    # Priority 1: municipality name match
     for region, keywords in REGIONES_COAHUILA.items():
         for kw in keywords:
             if kw in text:
                 return region
+
+    # Priority 2: Carbonífera topic keywords (geo-gated)
+    if _norm(nivel_geografico) in _CARBONIFERA_GEO_LEVELS:
+        titulo_norm = _norm(titulo)
+        for kw in CARBONIFERA_KEYWORDS:
+            if kw in titulo_norm:
+                return "Carbonífera"
+
     return None
 
 
@@ -148,7 +186,11 @@ def calcular_stats_regionales(df_week: pd.DataFrame) -> dict:
     }
 
     for _, row in df_week.iterrows():
-        region = detect_coahuila_region(row["titulo"], row.get("lugares", ""))
+        region = detect_coahuila_region(
+            row["titulo"],
+            row.get("lugares", ""),
+            row.get("nivel_geografico", ""),
+        )
         if region:
             stats[region]["count"] += 1
             stats[region]["articulos"].append({
@@ -186,13 +228,23 @@ def generar_outlook_regional(stats: dict, fecha_fin: date) -> str:
             "(Análisis GROQ no disponible — GROQ_API_KEY no configurado.)"
         )
 
+    carbonifera_count = stats.get("Carbonífera", {}).get("count", 0)
+    carbonifera_note = (
+        " Si la región Carbonífera tiene menciones, enmarca su actividad "
+        "en términos de empleo, transición energética y reconversión industrial "
+        "(no como inversión general). Para el resto de las regiones, "
+        "enmarca la actividad en términos de inversión e industria."
+        if carbonifera_count > 0
+        else ""
+    )
+
     prompt = (
         "Eres analista de la Secretaría de Economía de Coahuila. "
         f"La semana que termina el {fecha_fin.isoformat()} registró las siguientes "
         f"menciones regionales en medios: {resumen_datos}. "
         "Responde en exactamente 2 oraciones, en español institucional, sin introducción: "
         "¿Qué región concentró más actividad noticiosa y qué implica para "
-        "la inversión en Coahuila esta semana?"
+        f"Coahuila esta semana?{carbonifera_note}"
     )
 
     try:
