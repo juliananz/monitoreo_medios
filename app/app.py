@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 import hashlib
+import sqlite3
 from datetime import date, timedelta
 
 import pandas as pd
@@ -82,6 +83,31 @@ if os.getenv("DASHBOARD_PASSWORD") and st.sidebar.button("Cerrar sesion"):
 # =============================================================================
 # DATA LOADING  (ttl=3600 → auto-refresh every hour)
 # =============================================================================
+
+
+@st.cache_data(ttl=3600)
+def _db_debug_info() -> str:
+    """Return one-line debug string shown in sidebar to diagnose connection issues."""
+    import shutil, tempfile
+    db_path = Path(DB_PATH)
+    lines = [
+        f"sqlite3 version: {sqlite3.sqlite_version}",
+        f"DB size: {db_path.stat().st_size // 1024} KB" if db_path.exists() else "DB not found",
+        f"DB dir writable: {os.access(str(db_path.parent), os.W_OK)}",
+        f"DB file writable: {os.access(str(db_path), os.W_OK)}",
+    ]
+    for label, uri in [
+        ("normal", str(db_path)),
+        ("immutable", f"file://{db_path.as_posix()}?immutable=1"),
+    ]:
+        try:
+            c = sqlite3.connect(uri, uri=(uri.startswith("file:")))
+            n = c.execute("SELECT count(*) FROM sqlite_master").fetchone()[0]
+            c.close()
+            lines.append(f"{label} OK (schema rows: {n})")
+        except Exception as e:
+            lines.append(f"{label} FAIL: {e}")
+    return " | ".join(lines)
 
 
 @st.cache_data(ttl=3600)
@@ -166,6 +192,11 @@ PERIODOS = {
 }
 periodo_label = st.sidebar.selectbox("Periodo", list(PERIODOS.keys()), index=2)
 dias_sel = PERIODOS[periodo_label]
+
+# DB diagnostics — visible even when data fails so we can debug remotely
+with st.sidebar.expander("Diagnostico DB"):
+    for line in _db_debug_info().split(" | "):
+        st.caption(line)
 
 # Load raw data for this period
 df_raw = cargar_noticias(dias_sel)

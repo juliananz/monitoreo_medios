@@ -2,8 +2,11 @@
 Shared utilities for analysis modules.
 """
 
+import os
 import re
+import shutil
 import sqlite3
+import tempfile
 import unicodedata
 from contextlib import contextmanager
 from pathlib import Path
@@ -14,30 +17,58 @@ from config.settings import DB_PATH
 def get_db_connection():
     """Context manager for SQLite database connections.
 
-    Tries a normal read-write connection first.  If SQLite fails (e.g. on
-    Streamlit Community Cloud where /mount/src/ is read-only and SQLite
-    cannot create journal/lock files), automatically retries with
-    immutable=1 URI mode which bypasses all locking entirely.
+    Fallback chain for read-only filesystems (e.g. Streamlit Community Cloud):
+      1. Normal read-write connection (local dev, GitHub Actions pipeline).
+      2. immutable=1 URI — skips all file locking entirely.
+      3. Copy to /tmp — gives SQLite a writable directory for lock files.
+    Each step is smoke-tested with a real page read before yielding.
     """
     db_path = Path(DB_PATH)
+
+    def _smoke(conn):
+        conn.execute("SELECT count(*) FROM sqlite_master").fetchone()
+        return conn
+
+    def _close(conn):
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    tmp_path = None
     conn = None
+
+    # 1. Normal connection
     try:
-        conn = sqlite3.connect(str(db_path))
-        conn.execute("SELECT count(*) FROM sqlite_master").fetchone()  # actually reads page 1
+        conn = _smoke(sqlite3.connect(str(db_path)))
     except (sqlite3.DatabaseError, sqlite3.OperationalError):
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
-        # Fallback: immutable read-only mode — no locking, no journal files.
-        # Required on Streamlit Community Cloud where the repo is mounted
-        # read-only and SQLite cannot acquire file locks.
-        conn = sqlite3.connect(f"file://{db_path.as_posix()}?immutable=1", uri=True)
+        _close(conn)
+        conn = None
+
+    # 2. immutable=1 — no locking at all
+    if conn is None:
+        try:
+            conn = _smoke(sqlite3.connect(f"file://{db_path.as_posix()}?immutable=1", uri=True))
+        except (sqlite3.DatabaseError, sqlite3.OperationalError):
+            _close(conn)
+            conn = None
+
+    # 3. Copy to /tmp — gives SQLite a writable directory
+    if conn is None:
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix=".db")
+        os.close(tmp_fd)
+        shutil.copy2(str(db_path), tmp_path)
+        conn = sqlite3.connect(tmp_path)
+
     try:
         yield conn
     finally:
-        conn.close()
+        _close(conn)
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
 
 
 def normalizar_texto(texto: str) -> str:
