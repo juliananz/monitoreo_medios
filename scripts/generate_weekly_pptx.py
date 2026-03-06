@@ -30,35 +30,8 @@ from pptx.util import Inches, Pt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from config.settings import GROQ_API_KEY, GROQ_MODEL, OUTPUT_DIR
 
-# =============================================================================
-# STEP 1 REFERENCE: Regional mapping
-# NOTE: keywords.yaml only has flat state/country lists for nivel_geografico.
-# There are NO sub-regional municipality mappings in the pipeline.
-# The dict below is the first definition of Coahuila sub-regions in this project.
-# =============================================================================
-
-REGIONES_COAHUILA = {
-    "Saltillo / Metropolitana": [
-        "saltillo", "ramos arizpe", "arteaga", "general cepeda",
-    ],
-    "Frontera": [
-        "piedras negras", "ciudad acuna", "acuna", "nava", "jimenez", "zaragoza",
-    ],
-    "Laguna": [
-        "torreon", "gomez palacio", "lerdo", "matamoros",
-        "francisco i. madero", "francisco i madero",
-    ],
-    "Norte": [
-        "monclova", "frontera", "castanos", "sabinas", "nueva rosita", "muzquiz",
-    ],
-    "Sureste": [
-        "parras", "san pedro", "viesca",
-    ],
-}
-
-REGION_ORDER = list(REGIONES_COAHUILA.keys())
-
 DASHBOARD_CSV = Path(OUTPUT_DIR) / "dashboard_noticias.csv"
+XLSX_PATH = Path(__file__).resolve().parents[1] / "regiones_coahuila.xlsx"
 
 
 # =============================================================================
@@ -70,6 +43,47 @@ def _norm(text: str) -> str:
     text = str(text).lower()
     text = unicodedata.normalize("NFD", text)
     return "".join(c for c in text if unicodedata.category(c) != "Mn")
+
+
+def _cargar_regiones_xlsx() -> tuple[dict, list]:
+    """
+    Load region -> [municipality keywords] mapping from regiones_coahuila.xlsx.
+
+    Each municipality name is normalized (lowercase, no accents) and added as
+    a keyword. Compound names with punctuation (e.g. 'Francisco I. Madero')
+    also get a period-stripped variant ('francisco i madero').
+
+    Returns:
+        (regiones_dict, region_order_list)
+    """
+    df = pd.read_excel(XLSX_PATH)
+    df.columns = [c.strip() for c in df.columns]
+
+    regiones: dict = {}
+    order: list = []
+
+    for _, row in df.iterrows():
+        municipio = str(row["Municipio"]).strip()
+        region = str(row["Región"]).strip()
+        if not municipio or municipio == "nan" or not region or region == "nan":
+            continue
+
+        kw = _norm(municipio)
+        kw_alt = kw.replace(".", "").replace("  ", " ").strip()
+
+        if region not in regiones:
+            regiones[region] = []
+            order.append(region)
+
+        regiones[region].append(kw)
+        if kw_alt != kw:
+            regiones[region].append(kw_alt)
+
+    return regiones, order
+
+
+# Load at module level — raises clearly if xlsx is missing or malformed
+REGIONES_COAHUILA, REGION_ORDER = _cargar_regiones_xlsx()
 
 
 def detect_coahuila_region(titulo: str, lugares: str) -> Optional[str]:
