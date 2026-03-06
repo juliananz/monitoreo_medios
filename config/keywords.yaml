@@ -5,6 +5,16 @@ temas:
     - capital
     - expansion
     - nueva planta
+    - proyecto
+    - financiamiento
+    - fondo
+    - presupuesto
+    - credito
+    - deuda
+    - fideicomiso
+    - adquisicion
+    - crecimiento economico
+    - desarrollo economico
 
   empleo:
     - empleo
@@ -12,6 +22,18 @@ temas:
     - trabajo
     - contratacion
     - despidos
+    - salario
+    - sueldo
+    - trabajadores
+    - sindicato
+    - laboral
+    - jornada laboral
+    - desempleo
+    - huelga
+    - vacante
+    - nomina
+    - contrato colectivo
+    - mano de obra
 
   industria:
     - industria
@@ -19,6 +41,17 @@ temas:
     - manufactura
     - automotriz
     - planta
+    - fabrica
+    - acero
+    - mineria
+    - carbon
+    - coque
+    - siderurgia
+    - aerospacial
+    - ensamble
+    - produccion industrial
+    - zona industrial
+    - maquiladora
 
   comercio_exterior:
     - exportacion
@@ -26,6 +59,80 @@ temas:
     - t-mec
     - arancel
     - comercio exterior
+    - exportar
+    - importar
+    - tmec
+    - balanza comercial
+    - aduana
+    - libre comercio
+    - deficit comercial
+    - superavit comercial
+    - norma de origen
+    - regla de origen
+    - barreras comerciales
+
+  nearshoring:
+    - nearshoring
+    - relocalizacion
+    - deslocalizacion
+    - manufactura extranjera
+    - cadena de suministro
+    - reshoring
+    - friendshoring
+    - relocalizar
+    - inversion extranjera directa
+    - empresa extranjera
+
+  aranceles:
+    - arancel
+    - tarifa
+    - impuesto importacion
+    - arancel compensatorio
+    - dumping
+    - medida antidumping
+    - seccion 232
+    - seccion 301
+    - ieepa
+    - cuota compensatoria
+    - guerra comercial
+    - barrera comercial
+    - represalia arancelaria
+
+  energia:
+    - energia
+    - electricidad
+    - gas natural
+    - planta solar
+    - parque eolico
+    - cfe
+    - gasoducto
+    - refineria
+    - litio
+    - hidrogeno
+    - petroleo
+    - pemex
+    - nuclear
+    - termoelectrica
+    - renovable
+    - combustible
+    - turbina eolica
+
+  infraestructura:
+    - infraestructura
+    - carretera
+    - autopista
+    - puerto
+    - aeropuerto
+    - ferrocarril
+    - tren
+    - parque industrial
+    - zona economica
+    - construccion
+    - obra publica
+    - viaducto
+    - puente
+    - corredor industrial
+    - logistica
 
 riesgo:
   - cierre

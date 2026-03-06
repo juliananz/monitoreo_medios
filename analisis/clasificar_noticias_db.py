@@ -73,6 +73,61 @@ def clasificar_noticias():
     logger.info(f"Thematic classification completed. Created {total_tema_links} tema links.")
 
 
+def reclasificar_todo():
+    """
+    Full reclassification of ALL articles:
+    1. Ensure every topic in keywords.yaml exists in the temas table.
+    2. Delete all existing noticia_tema links.
+    3. Reset procesado_temas=0 for every article.
+    4. Run clasificar_noticias() to classify from scratch.
+    """
+    import yaml
+    from config.settings import KEYWORDS_PATH
+
+    with open(KEYWORDS_PATH, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    temas_yaml = config.get("temas", {})
+
+    tema_descriptions = {
+        "inversion": "Inversiones, capital, expansión empresarial",
+        "empleo": "Empleo, contrataciones, despidos, mercado laboral",
+        "industria": "Industria, manufactura, sector automotriz",
+        "comercio_exterior": "Exportaciones, importaciones, aranceles, T-MEC",
+        "nearshoring": "Nearshoring, relocalización, cadena de suministro",
+        "aranceles": "Aranceles, tarifas, medidas comerciales proteccionistas",
+        "energia": "Energía, petróleo, CFE, Pemex, renovables",
+        "infraestructura": "Infraestructura, carreteras, puertos, parques industriales",
+    }
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # 1. Ensure all temas from YAML exist in the DB
+        for nombre in temas_yaml:
+            palabras_str = ",".join(temas_yaml[nombre]) if temas_yaml[nombre] else ""
+            desc = tema_descriptions.get(nombre, "")
+            cursor.execute("""
+                INSERT OR IGNORE INTO temas (nombre, descripcion, palabras_clave)
+                VALUES (?, ?, ?)
+            """, (nombre, desc, palabras_str))
+        conn.commit()
+        logger.info(f"Ensured {len(temas_yaml)} temas in DB")
+
+        # 2. Delete all existing topic links
+        cursor.execute("DELETE FROM noticia_tema")
+        deleted = cursor.rowcount
+        conn.commit()
+        logger.info(f"Deleted {deleted} existing noticia_tema rows")
+
+        # 3. Reset procesado_temas for all articles
+        cursor.execute("UPDATE noticias SET procesado_temas = 0, temas = NULL, relevante = 0, score = 0")
+        conn.commit()
+        logger.info("Reset procesado_temas=0 for all articles")
+
+    # 4. Reclassify everything
+    clasificar_noticias()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     clasificar_noticias()

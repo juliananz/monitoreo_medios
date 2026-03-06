@@ -24,7 +24,8 @@ def clasificar_noticia(titulo: str, descripcion: str = "") -> dict:
         - relevante: 1 if any topic matched, 0 otherwise
     """
     temas_keywords = cargar_keywords()
-    texto = normalizar_texto(f"{titulo} {descripcion}")
+    texto_base = descripcion.strip() if descripcion and descripcion.strip() else titulo
+    texto = normalizar_texto(texto_base)
 
     temas_detectados = []
     score = 0
