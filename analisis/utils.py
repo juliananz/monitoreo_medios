@@ -23,7 +23,7 @@ def get_db_connection():
     conn = None
     try:
         conn = sqlite3.connect(str(db_path))
-        conn.execute("SELECT 1")  # smoke test — fails fast on read-only FS
+        conn.execute("SELECT count(*) FROM sqlite_master").fetchone()  # actually reads page 1
     except (sqlite3.DatabaseError, sqlite3.OperationalError):
         if conn is not None:
             try:
