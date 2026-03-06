@@ -46,6 +46,7 @@ from analisis.clasificar_riesgo_oportunidad_db import clasificar_riesgo_oportuni
 from analisis.resumen_diario_csv import generar_resumen_diario
 from analisis.agregacion import ejecutar_agregaciones, backfill_agregaciones
 from analisis.resumen_diario_llm import generar_resumen_diario_llm
+from analisis.exportar_datos import exportar_dashboard_data
 
 
 def main():
@@ -98,6 +99,13 @@ def main():
             logger.warning("LLM summary generation failed (no data or LLM error)")
     except Exception as e:
         logger.warning(f"LLM summary skipped: {e}")
+
+    # 10. Export dashboard CSV (replaces SQLite for Streamlit Cloud)
+    logger.info("[10/10] Exporting dashboard CSV...")
+    try:
+        exportar_dashboard_data()
+    except Exception as e:
+        logger.warning(f"Dashboard export failed: {e}")
 
     fin = datetime.now()
     duracion = fin - inicio

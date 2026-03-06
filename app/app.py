@@ -1,11 +1,8 @@
 """
 Dashboard de Monitoreo de Medios — Secretaria de Economia de Coahuila.
 
-Layout:
-  - Sidebar: filtros de periodo, tipo, nivel geografico
-  - Resumen ejecutivo LLM del dia
-  - KPIs con variacion vs semana anterior
-  - Tabs: Noticias | Riesgos & Oportunidades | Tendencias | Entidades | Regiones
+Reads from data/salidas/dashboard_noticias.csv (exported by the pipeline).
+No SQLite access needed — works on Streamlit Community Cloud read-only FS.
 """
 
 import sys
@@ -15,24 +12,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 import hashlib
-import sqlite3
 from datetime import date, timedelta
+from collections import Counter
 
 import pandas as pd
+from dateutil import parser as dateutil_parse
 import streamlit as st
 
-from analisis.utils import get_db_connection, clasificar_tipo
-from analisis.tendencias import (
-    get_tendencia_diaria,
-    get_tendencia_temas,
-    comparar_con_periodo_anterior,
-)
-from analisis.queries import (
-    get_top_entidades_periodo,
-    get_conteo_por_region,
-    get_conteo_diario,
-)
-from config.settings import DB_PATH, OUTPUT_DIR
+from analisis.utils import clasificar_tipo
+from config.settings import OUTPUT_DIR
 
 # =============================================================================
 # PAGE CONFIG
@@ -46,20 +34,23 @@ st.set_page_config(
 )
 
 # =============================================================================
+# PATHS
+# =============================================================================
+
+DASHBOARD_CSV = Path(OUTPUT_DIR) / "dashboard_noticias.csv"
+
+# =============================================================================
 # AUTHENTICATION
 # =============================================================================
 
 
 def check_password() -> bool:
     correct_password = os.getenv("DASHBOARD_PASSWORD", "")
-
     if not correct_password:
         st.sidebar.warning("Modo desarrollo: sin contrasena.")
         return True
-
     if st.session_state.get("authenticated", False):
         return True
-
     st.title("Monitoreo de Medios")
     st.subheader("Secretaria de Economia de Coahuila")
     password = st.text_input("Contrasena", type="password")
@@ -85,90 +76,31 @@ if os.getenv("DASHBOARD_PASSWORD") and st.sidebar.button("Cerrar sesion"):
 # =============================================================================
 
 
-@st.cache_data(ttl=3600)
-def _db_debug_info() -> str:
-    """Return one-line debug string shown in sidebar to diagnose connection issues."""
-    import shutil, tempfile
-    db_path = Path(DB_PATH)
-    lines = [
-        f"sqlite3 version: {sqlite3.sqlite_version}",
-        f"DB size: {db_path.stat().st_size // 1024} KB" if db_path.exists() else "DB not found",
-        f"DB dir writable: {os.access(str(db_path.parent), os.W_OK)}",
-        f"DB file writable: {os.access(str(db_path), os.W_OK)}",
-    ]
-    for label, uri in [
-        ("normal", str(db_path)),
-        ("immutable", f"file://{db_path.as_posix()}?immutable=1"),
-    ]:
-        try:
-            c = sqlite3.connect(uri, uri=(uri.startswith("file:")))
-            n = c.execute("SELECT count(*) FROM sqlite_master").fetchone()[0]
-            c.close()
-            lines.append(f"{label} OK (schema rows: {n})")
-        except Exception as e:
-            lines.append(f"{label} FAIL: {e}")
-    return " | ".join(lines)
-
-
-@st.cache_data(ttl=3600)
-def cargar_noticias(dias: int = 30) -> pd.DataFrame:
-    fecha_inicio = (date.today() - timedelta(days=dias)).isoformat()
+def _parse_fecha(val):
     try:
-        with get_db_connection() as conn:
-            df = pd.read_sql_query(
-                """
-                SELECT
-                    fecha, medio, titulo, url,
-                    personas, organizaciones, lugares,
-                    nivel_geografico,
-                    requiere_analisis_profundo,
-                    riesgo, oportunidad
-                FROM noticias
-                WHERE relevante = 1
-                  AND fecha >= ?
-                ORDER BY fecha DESC
-                """,
-                conn,
-                params=[fecha_inicio],
-            )
-        return df
-    except Exception as e:
-        st.error(f"Error cargando datos: {e}\nDB_PATH: {DB_PATH}\nExiste: {Path(DB_PATH).exists()}")
+        return dateutil_parse.parse(str(val)).date()
+    except Exception:
+        return None
+
+
+@st.cache_data(ttl=3600)
+def cargar_datos() -> pd.DataFrame:
+    """Load all relevant news from dashboard CSV."""
+    if not DASHBOARD_CSV.exists():
         return pd.DataFrame()
+    df = pd.read_csv(DASHBOARD_CSV)
+    df["fecha"] = df["fecha"].apply(_parse_fecha)
+    df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+    df = df.fillna("")
+    df["riesgo"] = pd.to_numeric(df["riesgo"], errors="coerce").fillna(0).astype(int)
+    df["oportunidad"] = pd.to_numeric(df["oportunidad"], errors="coerce").fillna(0).astype(int)
+    df["requiere_analisis_profundo"] = pd.to_numeric(df["requiere_analisis_profundo"], errors="coerce").fillna(0).astype(int)
+    df["tipo"] = df.apply(lambda r: clasificar_tipo(r["riesgo"], r["oportunidad"]), axis=1)
+    return df
 
 
-@st.cache_data(ttl=3600)
-def cargar_tendencia_diaria(dias: int = 30) -> pd.DataFrame:
-    return get_tendencia_diaria(dias)
-
-
-@st.cache_data(ttl=3600)
-def cargar_tendencia_temas(dias: int = 30) -> pd.DataFrame:
-    return get_tendencia_temas(dias)
-
-
-@st.cache_data(ttl=3600)
-def cargar_top_entidades(dias: int = 30, limit: int = 20):
-    return get_top_entidades_periodo(dias, limit)
-
-
-@st.cache_data(ttl=3600)
-def cargar_conteo_regiones():
-    return get_conteo_por_region()
-
-
-@st.cache_data(ttl=3600)
-def cargar_comparacion(dias: int = 7):
-    return comparar_con_periodo_anterior(dias)
-
-
-@st.cache_data(ttl=3600)
-def cargar_conteo_diario(dias: int = 30):
-    return get_conteo_diario(dias)
-
-
-def cargar_resumen_llm() -> tuple[str, str]:
-    """Return (fecha_str, texto) of the most recent LLM summary, or ('', '')."""
+def cargar_resumen_llm() -> tuple:
+    """Return (fecha_str, texto) of the most recent LLM summary."""
     for delta in range(0, 4):
         dia = date.today() - timedelta(days=delta)
         path = Path(OUTPUT_DIR) / f"resumen_llm_{dia.isoformat()}.txt"
@@ -189,32 +121,31 @@ PERIODOS = {
     "Ultimos 14 dias": 14,
     "Ultimos 30 dias": 30,
     "Ultimos 60 dias": 60,
+    "Todo": 3650,
 }
 periodo_label = st.sidebar.selectbox("Periodo", list(PERIODOS.keys()), index=2)
 dias_sel = PERIODOS[periodo_label]
 
-# DB diagnostics — visible even when data fails so we can debug remotely
-with st.sidebar.expander("Diagnostico DB"):
-    for line in _db_debug_info().split(" | "):
-        st.caption(line)
+# Load full dataset
+df_all = cargar_datos()
 
-# Load raw data for this period
-df_raw = cargar_noticias(dias_sel)
-
-if df_raw.empty:
-    st.warning("No hay datos disponibles en la base de datos.")
+if df_all.empty:
+    st.error(
+        f"No hay datos disponibles.\n\n"
+        f"CSV esperado: `{DASHBOARD_CSV}`\n\n"
+        f"Existe: `{DASHBOARD_CSV.exists()}`\n\n"
+        "Ejecuta el pipeline para generar los datos."
+    )
     st.stop()
 
-df = df_raw.copy()
-df = df.fillna("")
-df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-df["tipo"] = df.apply(lambda r: clasificar_tipo(r["riesgo"], r["oportunidad"]), axis=1)
+# Apply date filter
+fecha_inicio = pd.Timestamp(date.today() - timedelta(days=dias_sel))
+df = df_all[df_all["fecha"] >= fecha_inicio].copy()
 
-# Type filter
+# Sidebar filters on filtered data
 tipos_disp = sorted(df["tipo"].unique())
 tipos_sel = st.sidebar.multiselect("Tipo de noticia", tipos_disp, default=tipos_disp)
 
-# Geo filter
 niveles_disp = [n for n in sorted(df["nivel_geografico"].unique()) if n]
 niveles_sel = st.sidebar.multiselect("Nivel geografico", niveles_disp, default=niveles_disp)
 
@@ -232,9 +163,9 @@ st.sidebar.divider()
 if st.sidebar.button("Actualizar datos"):
     st.cache_data.clear()
     st.rerun()
-st.sidebar.caption(f"DB: {Path(DB_PATH).name}")
-st.sidebar.caption(f"Noticias cargadas: {len(df_raw)}")
-st.sidebar.caption(f"Filtradas: {len(df_f)}")
+st.sidebar.caption(f"Total historico: {len(df_all)} noticias")
+st.sidebar.caption(f"En periodo: {len(df)} | Filtradas: {len(df_f)}")
+st.sidebar.caption(f"Datos: {DASHBOARD_CSV.name}")
 
 # =============================================================================
 # HEADER
@@ -261,31 +192,30 @@ st.divider()
 # KPIs
 # =============================================================================
 
-try:
-    comp = cargar_comparacion(7)
-    cambios = comp.get("cambios_pct", {})
-except Exception:
-    cambios = {}
-
 total = len(df_f)
 riesgos = int(df_f["tipo"].isin(["RIESGO", "MIXTO"]).sum())
 oportunidades = int(df_f["tipo"].isin(["OPORTUNIDAD", "MIXTO"]).sum())
 analisis = int(df_f["requiere_analisis_profundo"].sum())
 
+# Week-over-week comparison
+try:
+    hoy = pd.Timestamp(date.today())
+    semana_actual = df_all[(df_all["fecha"] >= hoy - timedelta(days=7)) & (df_all["fecha"] <= hoy)]
+    semana_anterior = df_all[(df_all["fecha"] >= hoy - timedelta(days=14)) & (df_all["fecha"] < hoy - timedelta(days=7))]
+    if len(semana_anterior) > 0:
+        delta_noticias = round((len(semana_actual) - len(semana_anterior)) / len(semana_anterior) * 100)
+        delta_riesgos = round((semana_actual["riesgo"].sum() - semana_anterior["riesgo"].sum()) / max(semana_anterior["riesgo"].sum(), 1) * 100)
+        delta_oport = round((semana_actual["oportunidad"].sum() - semana_anterior["oportunidad"].sum()) / max(semana_anterior["oportunidad"].sum(), 1) * 100)
+    else:
+        delta_noticias = delta_riesgos = delta_oport = None
+except Exception:
+    delta_noticias = delta_riesgos = delta_oport = None
+
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total noticias", total)
-c2.metric(
-    "Riesgos",
-    riesgos,
-    delta=f"{cambios.get('riesgos', 0)}% vs semana anterior" if cambios.get("riesgos") else None,
-    delta_color="inverse",
-)
-c3.metric(
-    "Oportunidades",
-    oportunidades,
-    delta=f"{cambios.get('oportunidades', 0)}% vs semana anterior" if cambios.get("oportunidades") else None,
-)
-c4.metric("Requieren analisis profundo", analisis)
+c1.metric("Total noticias", total, delta=f"{delta_noticias}% vs sem. ant." if delta_noticias is not None else None)
+c2.metric("Riesgos", riesgos, delta=f"{delta_riesgos}% vs sem. ant." if delta_riesgos is not None else None, delta_color="inverse")
+c3.metric("Oportunidades", oportunidades, delta=f"{delta_oport}% vs sem. ant." if delta_oport is not None else None)
+c4.metric("Requieren analisis", analisis)
 
 st.divider()
 
@@ -293,7 +223,7 @@ st.divider()
 # TABS
 # =============================================================================
 
-tab_noticias, tab_ry_o, tab_tendencias, tab_entidades, tab_regiones = st.tabs([
+tab_noticias, tab_ryo, tab_tendencias, tab_entidades, tab_regiones = st.tabs([
     "Noticias",
     "Riesgos y Oportunidades",
     "Tendencias",
@@ -301,21 +231,9 @@ tab_noticias, tab_ry_o, tab_tendencias, tab_entidades, tab_regiones = st.tabs([
     "Regiones",
 ])
 
-
-# ---------------------------------------------------------------------------
-# TAB: NOTICIAS
-# ---------------------------------------------------------------------------
-
-def _df_display(df_src: pd.DataFrame) -> pd.DataFrame:
-    """Prepare a dataframe slice for display with formatted date."""
-    cols = ["fecha", "tipo", "medio", "titulo", "url", "nivel_geografico", "organizaciones", "lugares"]
-    out = df_src[cols].copy()
-    out["fecha"] = out["fecha"].dt.strftime("%Y-%m-%d")
-    return out.sort_values("fecha", ascending=False)
-
-
+# Shared column config for news tables
 _link_col = st.column_config.LinkColumn("Enlace", display_text="Ver nota")
-_col_cfg_base = {
+_col_cfg = {
     "url": _link_col,
     "fecha": st.column_config.TextColumn("Fecha", width="small"),
     "tipo": st.column_config.TextColumn("Tipo", width="small"),
@@ -326,70 +244,58 @@ _col_cfg_base = {
     "lugares": st.column_config.TextColumn("Lugares", width="medium"),
 }
 
+
+def _prep_table(src: pd.DataFrame) -> pd.DataFrame:
+    cols = ["fecha", "tipo", "medio", "titulo", "url", "nivel_geografico", "organizaciones", "lugares"]
+    out = src[cols].copy()
+    out["fecha"] = out["fecha"].dt.strftime("%Y-%m-%d")
+    return out.sort_values("fecha", ascending=False)
+
+
+# ---------------------------------------------------------------------------
+# TAB: NOTICIAS
+# ---------------------------------------------------------------------------
+
 with tab_noticias:
     st.subheader(f"Noticias relevantes — {periodo_label}")
     if df_f.empty:
         st.info("No hay noticias para los filtros seleccionados.")
     else:
-        # Quick summary bar
         tipo_counts = df_f["tipo"].value_counts()
-        col_sum = st.columns(len(tipo_counts))
+        cols_t = st.columns(len(tipo_counts))
         for i, (tipo, cnt) in enumerate(tipo_counts.items()):
-            col_sum[i].metric(tipo, cnt)
-
-        st.dataframe(
-            _df_display(df_f),
-            column_config=_col_cfg_base,
-            use_container_width=True,
-            hide_index=True,
-        )
+            cols_t[i].metric(tipo, cnt)
+        st.dataframe(_prep_table(df_f), column_config=_col_cfg, use_container_width=True, hide_index=True)
 
 
 # ---------------------------------------------------------------------------
 # TAB: RIESGOS Y OPORTUNIDADES
 # ---------------------------------------------------------------------------
 
-with tab_ry_o:
+with tab_ryo:
     df_riesgo = df_f[df_f["tipo"].isin(["RIESGO", "MIXTO"])]
     df_oport = df_f[df_f["tipo"].isin(["OPORTUNIDAD", "MIXTO"])]
 
     col_r, col_o = st.columns(2)
-
     with col_r:
         st.markdown(f"### Riesgos ({len(df_riesgo)})")
         if df_riesgo.empty:
-            st.success("Sin riesgos en el periodo seleccionado.")
+            st.success("Sin riesgos en el periodo.")
         else:
-            st.dataframe(
-                _df_display(df_riesgo),
-                column_config=_col_cfg_base,
-                use_container_width=True,
-                hide_index=True,
-            )
+            st.dataframe(_prep_table(df_riesgo), column_config=_col_cfg, use_container_width=True, hide_index=True)
 
     with col_o:
         st.markdown(f"### Oportunidades ({len(df_oport)})")
         if df_oport.empty:
-            st.info("Sin oportunidades en el periodo seleccionado.")
+            st.info("Sin oportunidades en el periodo.")
         else:
-            st.dataframe(
-                _df_display(df_oport),
-                column_config=_col_cfg_base,
-                use_container_width=True,
-                hide_index=True,
-            )
+            st.dataframe(_prep_table(df_oport), column_config=_col_cfg, use_container_width=True, hide_index=True)
 
-    # Noticias que requieren atencion inmediata
     df_profundo = df_f[df_f["requiere_analisis_profundo"] == 1]
     if not df_profundo.empty:
         st.divider()
         st.markdown(f"### Requieren analisis profundo ({len(df_profundo)})")
-        st.dataframe(
-            _df_display(df_profundo),
-            column_config=_col_cfg_base,
-            use_container_width=True,
-            hide_index=True,
-        )
+        st.dataframe(_prep_table(df_profundo), column_config=_col_cfg, use_container_width=True, hide_index=True)
 
 
 # ---------------------------------------------------------------------------
@@ -398,69 +304,62 @@ with tab_ry_o:
 
 with tab_tendencias:
     periodo_t = st.selectbox(
-        "Periodo de analisis",
+        "Periodo",
         [7, 14, 30, 60],
         index=2,
         format_func=lambda x: f"Ultimos {x} dias",
         key="periodo_t",
     )
+    fecha_t = pd.Timestamp(date.today() - timedelta(days=periodo_t))
+    df_t = df_all[df_all["fecha"] >= fecha_t]
 
-    # --- Volumen diario ---
-    st.markdown("#### Volumen diario de noticias")
-    try:
-        df_tend = cargar_tendencia_diaria(periodo_t)
-        if not df_tend.empty:
-            chart_data = df_tend.set_index("fecha")[
-                ["total_noticias", "total_riesgo", "total_oportunidad"]
-            ].rename(columns={
-                "total_noticias": "Total",
-                "total_riesgo": "Riesgos",
-                "total_oportunidad": "Oportunidades",
-            })
-            st.line_chart(chart_data)
-        else:
-            # Fallback: compute directly from noticias table
-            daily = cargar_conteo_diario(periodo_t)
-            if daily:
-                df_daily = pd.DataFrame(daily).set_index("fecha")
-                st.line_chart(df_daily[["total", "riesgos", "oportunidades"]].rename(columns={
-                    "total": "Total", "riesgos": "Riesgos", "oportunidades": "Oportunidades"
-                }))
-            else:
-                st.info("Sin datos de tendencias diarias. Ejecuta el pipeline para generar agregaciones.")
-    except Exception as e:
-        st.warning(f"Tendencias diarias no disponibles: {e}")
+    # Daily volume
+    st.markdown("#### Volumen diario")
+    if not df_t.empty:
+        daily = (
+            df_t.assign(fecha_str=df_t["fecha"].dt.strftime("%Y-%m-%d"))
+            .groupby("fecha_str")
+            .agg(Total=("id", "count"), Riesgos=("riesgo", "sum"), Oportunidades=("oportunidad", "sum"))
+        )
+        st.line_chart(daily)
+    else:
+        st.info("Sin datos para este periodo.")
 
     st.divider()
 
-    # --- Por tema ---
+    # By topic
     st.markdown("#### Tendencias por tema")
-    try:
-        df_temas = cargar_tendencia_temas(periodo_t)
-        if not df_temas.empty:
-            df_pivot = df_temas.pivot_table(
-                index="fecha", columns="tema", values="total_noticias", aggfunc="sum"
-            ).fillna(0)
-            st.line_chart(df_pivot)
-        else:
-            st.info("Sin datos de tendencias por tema.")
-    except Exception as e:
-        st.warning(f"Tendencias por tema no disponibles: {e}")
+    df_temas_raw = df_t[df_t["temas"] != ""].copy()
+    if not df_temas_raw.empty:
+        df_temas_raw = df_temas_raw.assign(tema=df_temas_raw["temas"].str.split("|"))
+        df_temas_exp = df_temas_raw.explode("tema")
+        df_temas_exp = df_temas_exp[df_temas_exp["tema"].str.strip() != ""]
+        df_temas_exp["fecha_str"] = df_temas_exp["fecha"].dt.strftime("%Y-%m-%d")
+        pivot = (
+            df_temas_exp.groupby(["fecha_str", "tema"])
+            .size()
+            .reset_index(name="n")
+            .pivot(index="fecha_str", columns="tema", values="n")
+            .fillna(0)
+        )
+        st.line_chart(pivot)
+    else:
+        st.info("Sin datos de temas.")
 
     st.divider()
 
-    # --- Por medio ---
-    st.markdown("#### Noticias por medio")
-    if not df_f.empty:
+    # By media source
+    st.markdown("#### Por medio")
+    if not df_t.empty:
         medio_data = (
-            df_f.groupby("medio")
-            .agg(Total=("titulo", "count"), Riesgos=("riesgo", "sum"), Oportunidades=("oportunidad", "sum"))
+            df_t.groupby("medio")
+            .agg(Total=("id", "count"), Riesgos=("riesgo", "sum"), Oportunidades=("oportunidad", "sum"))
             .sort_values("Total", ascending=False)
         )
-        col_chart_m, col_table_m = st.columns([1, 1])
-        with col_chart_m:
+        col_mc, col_mt = st.columns([1, 1])
+        with col_mc:
             st.bar_chart(medio_data["Total"])
-        with col_table_m:
+        with col_mt:
             st.dataframe(medio_data, use_container_width=True)
 
 
@@ -476,27 +375,42 @@ with tab_entidades:
         format_func=lambda x: f"Ultimos {x} dias",
         key="periodo_e",
     )
+    fecha_e = pd.Timestamp(date.today() - timedelta(days=periodo_e))
+    df_e = df_all[df_all["fecha"] >= fecha_e]
 
-    try:
-        top_ents = cargar_top_entidades(periodo_e, 20)
-        if top_ents:
-            df_ents = pd.DataFrame(top_ents)
+    # Parse personas + organizaciones into entity counts
+    ent_counter: Counter = Counter()
+    ent_riesgo: Counter = Counter()
+    ent_oport: Counter = Counter()
 
-            col_chart_e, col_table_e = st.columns([1, 1])
-            with col_chart_e:
-                st.markdown("#### Top 10 entidades")
-                st.bar_chart(df_ents.set_index("entidad")["total_menciones"].head(10))
-            with col_table_e:
-                st.markdown("#### Detalle completo")
-                st.dataframe(
-                    df_ents[["entidad", "tipo", "total_menciones", "total_riesgo", "total_oportunidad", "dias_activos"]],
-                    use_container_width=True,
-                    hide_index=True,
-                )
-        else:
-            st.info("No hay datos de entidades disponibles para este periodo.")
-    except Exception as e:
-        st.warning(f"Entidades no disponibles: {e}")
+    for _, row in df_e.iterrows():
+        names = []
+        for col in ("personas", "organizaciones"):
+            val = str(row.get(col, "")).strip()
+            if val:
+                names += [n.strip() for n in val.split(",") if n.strip()]
+        for name in names:
+            ent_counter[name] += 1
+            if row["riesgo"] == 1:
+                ent_riesgo[name] += 1
+            if row["oportunidad"] == 1:
+                ent_oport[name] += 1
+
+    if ent_counter:
+        top_ents = pd.DataFrame([
+            {"entidad": k, "menciones": v, "riesgo": ent_riesgo[k], "oportunidad": ent_oport[k]}
+            for k, v in ent_counter.most_common(20)
+        ])
+
+        col_ec, col_et = st.columns([1, 1])
+        with col_ec:
+            st.markdown("#### Top 10 entidades")
+            st.bar_chart(top_ents.set_index("entidad")["menciones"].head(10))
+        with col_et:
+            st.markdown("#### Detalle")
+            st.dataframe(top_ents, use_container_width=True, hide_index=True)
+    else:
+        st.info("Sin datos de entidades para este periodo.")
 
 
 # ---------------------------------------------------------------------------
@@ -512,29 +426,28 @@ with tab_regiones:
 
         st.divider()
         st.markdown("#### Riesgos y oportunidades por nivel geografico")
-        geo_summary = (
+        geo_sum = (
             df_f.groupby("nivel_geografico")
-            .agg(Total=("titulo", "count"), Riesgos=("riesgo", "sum"), Oportunidades=("oportunidad", "sum"))
+            .agg(Total=("id", "count"), Riesgos=("riesgo", "sum"), Oportunidades=("oportunidad", "sum"))
             .sort_values("Total", ascending=False)
         )
-        st.dataframe(geo_summary, use_container_width=True)
+        st.dataframe(geo_sum, use_container_width=True)
 
     st.divider()
-    st.markdown("#### Por region (municipio / zona)")
-    try:
-        regiones = cargar_conteo_regiones()
-        if regiones:
-            df_reg = pd.DataFrame(regiones)
-            col_chart_reg, col_table_reg = st.columns([1, 1])
-            with col_chart_reg:
-                st.bar_chart(df_reg.set_index("region")["total"].head(15))
-            with col_table_reg:
-                st.dataframe(
-                    df_reg[["region", "tipo_region", "total", "riesgos", "oportunidades"]],
-                    use_container_width=True,
-                    hide_index=True,
-                )
-        else:
-            st.info("No hay datos de regiones disponibles.")
-    except Exception as e:
-        st.info(f"Datos de regiones no disponibles: {e}")
+    st.markdown("#### Lugares mas mencionados")
+    if not df_f.empty:
+        lugar_counter: Counter = Counter()
+        for val in df_f["lugares"]:
+            for lugar in str(val).split(","):
+                lugar = lugar.strip()
+                if lugar:
+                    lugar_counter[lugar] += 1
+        if lugar_counter:
+            df_lugares = pd.DataFrame(
+                [{"lugar": k, "menciones": v} for k, v in lugar_counter.most_common(20)]
+            )
+            col_lc, col_lt = st.columns([1, 1])
+            with col_lc:
+                st.bar_chart(df_lugares.set_index("lugar")["menciones"].head(15))
+            with col_lt:
+                st.dataframe(df_lugares, use_container_width=True, hide_index=True)
