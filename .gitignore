@@ -25,3 +25,10 @@ notebooks/
 # OS
 .DS_Store
 Thumbs.db
+nul
+
+# Old output directory (superseded by data/salidas/)
+output/
+
+# Local Excel files
+regiones_coahuila.xlsx

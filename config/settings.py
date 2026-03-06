@@ -8,10 +8,13 @@ Supports .env file for environment-specific configuration.
 import os
 from pathlib import Path
 
+# HF_HOME supersedes TRANSFORMERS_CACHE since transformers v5
+os.environ.pop("TRANSFORMERS_CACHE", None)
+
 # Try to load .env file if python-dotenv is available
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 except ImportError:
     pass  # python-dotenv not installed, use defaults
 
