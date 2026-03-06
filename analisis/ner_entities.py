@@ -7,6 +7,7 @@ Fallback: Spanish BERT model (mrm8488/bert-spanish-cased-finetuned-ner).
 Falls back to BERT per batch if GROQ is unavailable or fails.
 """
 
+import html as _html_mod
 import json
 import logging
 import re
@@ -22,6 +23,29 @@ logger = logging.getLogger(__name__)
 GROQ_BATCH_SIZE = 5
 
 # ---------------------------------------------------------------------------
+# Text helpers
+# ---------------------------------------------------------------------------
+
+def _strip_html(text: str) -> str:
+    """Remove HTML tags, decode entities, collapse whitespace. Truncates to 1500 chars."""
+    if not text:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", text)          # remove tags
+    text = _html_mod.unescape(text)                # &amp; &nbsp; etc.
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:1500]
+
+
+def _limpiar_token_bert(word: str) -> str:
+    """Remove WordPiece '##' subword prefix that BERT leaves when a token is its own entity span.
+
+    convert_tokens_to_string(["##inbaum"]) → "##inbaum" (no leading space to replace).
+    This function catches those stragglers.
+    """
+    return re.sub(r"\s*##", "", word).strip()
+
+
+# ---------------------------------------------------------------------------
 # Model initialization (lazy)
 # ---------------------------------------------------------------------------
 
@@ -32,11 +56,16 @@ _groq_client = None
 def _get_bert_pipeline():
     global _ner_pipeline
     if _ner_pipeline is None:
-        _ner_pipeline = pipeline(
-            "ner",
-            model="mrm8488/bert-spanish-cased-finetuned-ner",
-            aggregation_strategy="simple",
-        )
+        try:
+            import torch  # noqa: F401 — required by transformers pipeline
+            _ner_pipeline = pipeline(
+                "ner",
+                model="mrm8488/bert-spanish-cased-finetuned-ner",
+                aggregation_strategy="simple",
+            )
+        except Exception as e:
+            logger.warning(f"BERT pipeline unavailable (torch missing?): {e}")
+            return None
     return _ner_pipeline
 
 
@@ -90,7 +119,7 @@ def _extraer_con_groq(batch: list) -> dict:
         return {}
 
     noticias_text = "\n\n".join(
-        f"{i+1}. {titulo} {descripcion or ''}".strip()
+        f"{i+1}. {titulo} {_strip_html(descripcion or '')}".strip()
         for i, (nid, titulo, descripcion) in enumerate(batch)
     )
 
@@ -136,12 +165,17 @@ def _extraer_con_bert(batch: list) -> dict:
     """
     Extract entities for a batch using Spanish BERT NER.
     Returns dict {noticia_id: {personas, organizaciones, lugares}}.
+    Returns empty dict if BERT/torch is unavailable.
     """
     nlp = _get_bert_pipeline()
+    if nlp is None:
+        logger.warning("BERT fallback skipped — torch not installed. Articles will have empty entities.")
+        return {}
     result = {}
 
     for noticia_id, titulo, descripcion in batch:
-        texto = f"{titulo} {descripcion or ''}"
+        desc_limpia = _strip_html(descripcion or "")
+        texto = f"{titulo} {desc_limpia}".strip()
         encoded = nlp.tokenizer(texto, truncation=True, max_length=512)
         texto = nlp.tokenizer.decode(encoded["input_ids"], skip_special_tokens=True)
 
@@ -149,8 +183,9 @@ def _extraer_con_bert(batch: list) -> dict:
 
         personas, organizaciones, lugares = set(), set(), set()
         for ent in entidades:
-            valor = ent["word"].strip()
-            if len(valor) < 2:
+            valor = _limpiar_token_bert(ent["word"])
+            # Drop pure subword fragments or single-char tokens
+            if len(valor) < 2 or valor.startswith("#"):
                 continue
             etiqueta = ent["entity_group"]
             if etiqueta == "PER":
@@ -213,17 +248,31 @@ def get_or_create_entidad(cursor, nombre: str, tipo: str, alias_map: dict) -> in
         return None
 
 
-def inferir_nivel_geografico(lugares: set, config: dict) -> str:
+def inferir_nivel_geografico(lugares: set, config: dict, titulo: str = "") -> str:
+    """Infer geographic level from extracted locations AND the article title.
+
+    Checking the title directly catches cases where NER misses a location
+    (e.g. "Coahuila" in the headline but not extracted as a LOC entity).
+    Priority: internacional > estatal > nacional > indeterminado.
+    """
     lugares_norm = [normalizar_entidad(loc) for loc in lugares]
+    titulo_norm = normalizar_entidad(titulo)
     estado_objetivo = config["estado_objetivo"]
     estados_mexico = config["estados_mexico"]
     paises_clave = config["paises_clave"]
     paises_no_mexico = [p for p in paises_clave if p not in ("mexico", "méxico")]
-    if any(p in lugares_norm for p in paises_no_mexico):
+
+    def _en_lugares(terms):
+        return any(t in lugares_norm for t in terms)
+
+    def _en_titulo(terms):
+        return any(t in titulo_norm for t in terms)
+
+    if _en_lugares(paises_no_mexico) or _en_titulo(paises_no_mexico):
         return "internacional"
-    if estado_objetivo in lugares_norm:
+    if estado_objetivo in lugares_norm or estado_objetivo in titulo_norm:
         return "estatal"
-    if any(e in lugares_norm for e in estados_mexico):
+    if _en_lugares(estados_mexico) or _en_titulo(estados_mexico):
         return "nacional"
     return "indeterminado"
 
@@ -307,7 +356,7 @@ def ejecutar_ner():
                 organizaciones = ents["organizaciones"]
                 lugares = ents["lugares"]
 
-                nivel_geo = inferir_nivel_geografico(lugares, geo_config)
+                nivel_geo = inferir_nivel_geografico(lugares, geo_config, titulo)
                 region_id = get_region_id(cursor, lugares, region_map)
                 flag_analisis = requiere_analisis(lugares, organizaciones, geo_config)
 
