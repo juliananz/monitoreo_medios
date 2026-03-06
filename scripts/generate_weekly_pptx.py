@@ -254,7 +254,7 @@ def generar_outlook_regional(stats: dict, fecha_fin: date) -> str:
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=130,
+            max_tokens=180,
         )
         return response.choices[0].message.content.strip()
     except Exception as exc:
@@ -407,8 +407,9 @@ def _add_resumen_slide(prs: Presentation, df_week: pd.DataFrame, fecha_fin: date
 def _add_topic_slide(prs: Presentation, tema: str,
                      df_tema: pd.DataFrame, fecha_fin: date):
     slide = _blank(prs)
+    n = len(df_tema)
     _header(slide, f"Tema: {tema.replace('_', ' ').title()}",
-            f"{len(df_tema)} artículos esta semana")
+            f"{n} artículo{'s' if n != 1 else ''} esta semana")
     _footer(slide, fecha_fin.strftime("%d/%m/%Y"))
 
     riesgos = int(df_tema["riesgo"].sum())
@@ -472,37 +473,42 @@ def _add_regional_slide(prs: Presentation, stats: dict, outlook: str,
         bold=True, size=11, color=AZUL)
 
     # Right panel: GROQ outlook
+    # Panel spans from y=1.15 to y=5.25 (just above footer at 5.4)
     panel_x = Inches(6.5)
-    _rect(slide, panel_x, Inches(1.15), Inches(3.25), Inches(4.0), fill=AZUL_CLARO)
+    _rect(slide, panel_x, Inches(1.15), Inches(3.25), Inches(4.1), fill=AZUL_CLARO)
     _tb(slide, "Perspectiva Regional",
-        panel_x + Inches(0.15), Inches(1.22), Inches(2.9), Inches(0.32),
+        panel_x + Inches(0.15), Inches(1.22), Inches(2.9), Inches(0.30),
         bold=True, size=10, color=AZUL)
     _tb(slide, outlook,
-        panel_x + Inches(0.15), Inches(1.58), Inches(2.92), Inches(3.4),
+        panel_x + Inches(0.15), Inches(1.55), Inches(2.92), Inches(3.6),
         size=9, color=NEGRO, wrap=True)
 
     # Left column: region blocks
+    # Budget: usable height = footer (5.4") - start (1.18") = 4.22"
+    # Worst case: 5 active regions × ~0.82" each = 4.10" — fits.
+    # Per active region: name(0.25) + balance(0.17) + title×2(0.20×2) = 0.82"
+    # Per inactive region: 0.25"
     y = Inches(1.18)
     for region in REGION_ORDER:
         s = stats[region]
 
         if s["count"] > 0:
             # Region name + count (two runs in one textbox)
-            txb = slide.shapes.add_textbox(Inches(0.4), y, Inches(5.8), Inches(0.32))
+            txb = slide.shapes.add_textbox(Inches(0.4), y, Inches(5.8), Inches(0.28))
             tf = txb.text_frame
             tf.word_wrap = False
             p = tf.paragraphs[0]
             r1 = p.add_run()
             r1.text = f"{region}  "
             r1.font.bold = True
-            r1.font.size = Pt(11)
+            r1.font.size = Pt(10)
             r1.font.color.rgb = AZUL
             r2 = p.add_run()
             r2.text = f"({s['count']} artículo{'s' if s['count'] != 1 else ''})"
             r2.font.bold = False
-            r2.font.size = Pt(10)
+            r2.font.size = Pt(9)
             r2.font.color.rgb = TEAL
-            y += Inches(0.30)
+            y += Inches(0.25)
 
             # Risk / opportunity balance
             bal_parts = []
@@ -517,27 +523,25 @@ def _add_regional_slide(prs: Presentation, stats: dict, outlook: str,
             if bal_parts:
                 bal_color = ROJO if s["riesgos"] else VERDE
                 _tb(slide, "  " + "  |  ".join(bal_parts),
-                    Inches(0.4), y, Inches(5.8), Inches(0.24),
-                    size=8, color=bal_color)
-                y += Inches(0.23)
+                    Inches(0.4), y, Inches(5.8), Inches(0.20),
+                    size=7, color=bal_color)
+                y += Inches(0.17)
 
             # Top 2 titles
             for art in s["articulos"][:2]:
-                titulo_trunc = str(art["titulo"])[:88]
+                titulo_trunc = str(art["titulo"])[:90]
                 _tb(slide, f"  • {titulo_trunc}",
-                    Inches(0.4), y, Inches(5.9), Inches(0.27),
-                    size=8, color=NEGRO)
-                y += Inches(0.27)
-
-            y += Inches(0.08)  # gap between active regions
+                    Inches(0.4), y, Inches(5.9), Inches(0.22),
+                    size=7.5, color=NEGRO)
+                y += Inches(0.20)
 
         else:
             # Zero articles — muted line
             _tb(slide,
                 f"{region}  —  Sin menciones esta semana",
-                Inches(0.4), y, Inches(5.8), Inches(0.27),
-                size=9, color=GRIS)
-            y += Inches(0.30)
+                Inches(0.4), y, Inches(5.8), Inches(0.24),
+                size=8.5, color=GRIS)
+            y += Inches(0.25)
 
 
 def _add_conclusiones_slide(prs: Presentation, df_week: pd.DataFrame, fecha_fin: date):
