@@ -1,0 +1,13 @@
+# Treat SQLite database as binary to prevent CRLF corruption
+*.db binary
+*.db-shm binary
+*.db-wal binary
+
+# Python source files: normalize line endings
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.txt text eol=lf
+*.csv text eol=lf
+*.md text eol=lf
+*.json text eol=lf

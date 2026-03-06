@@ -2,17 +2,33 @@
 Shared utilities for analysis modules.
 """
 
+import os
 import re
 import sqlite3
 import unicodedata
 from contextlib import contextmanager
+from pathlib import Path
 from config.settings import DB_PATH
 
 
 @contextmanager
 def get_db_connection():
-    """Context manager for SQLite database connections."""
-    conn = sqlite3.connect(DB_PATH)
+    """Context manager for SQLite database connections.
+
+    Opens in read-only mode when the DB directory is not writable (e.g.
+    Streamlit Community Cloud mounts the repo as read-only).  Falls back to
+    normal read-write mode for the pipeline and local development.
+    """
+    db_path = Path(DB_PATH)
+    if not os.access(db_path.parent, os.W_OK):
+        # Read-only filesystem (Streamlit Cloud) — use URI read-only mode so
+        # SQLite does not attempt to create journal or lock files.
+        uri = db_path.as_posix()
+        if not uri.startswith("/"):
+            uri = "/" + uri
+        conn = sqlite3.connect(f"file:{uri}?mode=ro", uri=True)
+    else:
+        conn = sqlite3.connect(str(db_path))
     try:
         yield conn
     finally:
