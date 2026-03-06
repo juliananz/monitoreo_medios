@@ -265,6 +265,32 @@ def generar_outlook_regional(stats: dict, fecha_fin: date) -> str:
 # PPTX DESIGN CONSTANTS
 # =============================================================================
 
+# Display names that restore accents stripped during normalisation
+TOPIC_DISPLAY: dict[str, str] = {
+    "inversion":        "Inversión",
+    "energia":          "Energía",
+    "infraestructura":  "Infraestructura",
+    "empleo":           "Empleo",
+    "industria":        "Industria",
+    "comercio_exterior": "Comercio Exterior",
+    "aranceles":        "Aranceles",
+    "nearshoring":      "Nearshoring",
+}
+
+
+def _display_topic(tema: str) -> str:
+    key = tema.lower().strip()
+    return TOPIC_DISPLAY.get(key, tema.replace("_", " ").title())
+
+
+def _trunc(text: str, max_chars: int) -> str:
+    """Truncate at word boundary and append ellipsis."""
+    if len(text) <= max_chars:
+        return text
+    cut = text[:max_chars].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "…"
+
+
 AZUL   = RGBColor(0x1F, 0x38, 0x64)
 TEAL   = RGBColor(0x17, 0x65, 0x8A)
 VERDE  = RGBColor(0x1E, 0x7A, 0x45)
@@ -400,7 +426,7 @@ def _add_resumen_slide(prs: Presentation, df_week: pd.DataFrame, fecha_fin: date
               fill=RGBColor(0xE0, 0xEA, 0xF4))
         bar_w = max(Inches(0.02), Inches(4.2 * pct))
         _rect(slide, x, y + Inches(0.06), bar_w, Inches(0.27), fill=TEAL)
-        _tb(slide, f"{tema.replace('_', ' ').title()}  {cnt}",
+        _tb(slide, f"{_display_topic(tema)}  {cnt}",
             x + Inches(0.05), y, Inches(4.1), Inches(0.36), size=9, color=NEGRO)
 
 
@@ -408,7 +434,7 @@ def _add_topic_slide(prs: Presentation, tema: str,
                      df_tema: pd.DataFrame, fecha_fin: date):
     slide = _blank(prs)
     n = len(df_tema)
-    _header(slide, f"Tema: {tema.replace('_', ' ').title()}",
+    _header(slide, f"Tema: {_display_topic(tema)}",
             f"{n} artículo{'s' if n != 1 else ''} esta semana")
     _footer(slide, fecha_fin.strftime("%d/%m/%Y"))
 
@@ -421,7 +447,7 @@ def _add_topic_slide(prs: Presentation, tema: str,
     top_rows = df_tema.sort_values("fecha", ascending=False).head(8)
     y = Inches(1.18)
     for _, row in top_rows.iterrows():
-        titulo = str(row["titulo"])[:110]
+        titulo = _trunc(str(row["titulo"]), 110)
         medio  = str(row.get("medio", ""))
         try:
             fecha_str = row["fecha"].strftime("%d/%m") if pd.notna(row["fecha"]) else ""
@@ -529,7 +555,7 @@ def _add_regional_slide(prs: Presentation, stats: dict, outlook: str,
 
             # Top 2 titles
             for art in s["articulos"][:2]:
-                titulo_trunc = str(art["titulo"])[:90]
+                titulo_trunc = _trunc(str(art["titulo"]), 90)
                 _tb(slide, f"  • {titulo_trunc}",
                     Inches(0.4), y, Inches(5.9), Inches(0.22),
                     size=7.5, color=NEGRO)
@@ -563,7 +589,7 @@ def _add_conclusiones_slide(prs: Presentation, df_week: pd.DataFrame, fecha_fin:
 
     lines = [
         f"• Se analizaron {total} noticias relevantes en la semana.",
-        f"• Tema dominante: {top_tema.replace('_', ' ').title()} "
+        f"• Tema dominante: {_display_topic(top_tema)} "
         f"({tema_counts.get(top_tema, 0)} artículos).",
         f"• Balance global: {oports} oportunidades / {riesgos} riesgos detectados.",
         "• Revisar artículos con análisis profundo requerido para seguimiento puntual.",
