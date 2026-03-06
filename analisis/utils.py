@@ -2,7 +2,6 @@
 Shared utilities for analysis modules.
 """
 
-import os
 import re
 import sqlite3
 import unicodedata
@@ -15,20 +14,26 @@ from config.settings import DB_PATH
 def get_db_connection():
     """Context manager for SQLite database connections.
 
-    Opens in read-only mode when the DB directory is not writable (e.g.
-    Streamlit Community Cloud mounts the repo as read-only).  Falls back to
-    normal read-write mode for the pipeline and local development.
+    Tries a normal read-write connection first.  If SQLite fails (e.g. on
+    Streamlit Community Cloud where /mount/src/ is read-only and SQLite
+    cannot create journal/lock files), automatically retries with
+    immutable=1 URI mode which bypasses all locking entirely.
     """
     db_path = Path(DB_PATH)
-    if not os.access(db_path.parent, os.W_OK):
-        # Read-only filesystem (Streamlit Cloud) — use URI read-only mode so
-        # SQLite does not attempt to create journal or lock files.
-        uri = db_path.as_posix()
-        if not uri.startswith("/"):
-            uri = "/" + uri
-        conn = sqlite3.connect(f"file:{uri}?mode=ro", uri=True)
-    else:
+    conn = None
+    try:
         conn = sqlite3.connect(str(db_path))
+        conn.execute("SELECT 1")  # smoke test — fails fast on read-only FS
+    except (sqlite3.DatabaseError, sqlite3.OperationalError):
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        # Fallback: immutable read-only mode — no locking, no journal files.
+        # Required on Streamlit Community Cloud where the repo is mounted
+        # read-only and SQLite cannot acquire file locks.
+        conn = sqlite3.connect(f"file://{db_path.as_posix()}?immutable=1", uri=True)
     try:
         yield conn
     finally:
