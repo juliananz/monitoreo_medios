@@ -13,9 +13,12 @@ htmlcov/
 notebooks/
 .ipynb_checkpoints/
 
-# Data — DB y salidas versionadas para deployment (pipeline hace commit diario)
-# data/noticias_medios.db  ← tracked
-# data/salidas/            ← tracked
+# Data — not tracked in git
+data/noticias_medios.db
+data/salidas/
+logs/
+.dbt/
+.claude/
 
 # Environment (keep .env.example)
 .env

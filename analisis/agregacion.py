@@ -162,7 +162,7 @@ def calcular_agregacion_region_diaria(fecha: date) -> None:
             FROM noticias
             WHERE DATE(fecha) = ?
               AND relevante = 1
-            GROUP BY DATE(fecha), COALESCE(region_id, -1), nivel_geografico
+            GROUP BY DATE(fecha), COALESCE(region_id, -1), COALESCE(nivel_geografico, 'indeterminado')
         """, (fecha_str,))
 
         conn.commit()
