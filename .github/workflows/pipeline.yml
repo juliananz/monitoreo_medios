@@ -24,10 +24,19 @@ jobs:
           cache: pip
 
       - name: Install torch CPU
-        run: pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Restore SQLite DB from cache
+        id: cache-db
+        uses: actions/cache@v4
+        with:
+          path: data/noticias_medios.db
+          key: noticias-db-${{ github.run_id }}
+          restore-keys: |
+            noticias-db-
 
       - name: Run pipeline
         env:
@@ -36,10 +45,12 @@ jobs:
           OUTPUT_DIR: data/salidas
         run: python main.py
 
-      - name: Commit DB y salidas actualizadas
+      - name: Commit salidas para Streamlit Cloud
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/noticias_medios.db data/salidas/ || true
+          # Force-add the two files Streamlit Cloud reads
+          git add -f data/salidas/dashboard_noticias.csv
+          git add -f data/salidas/resumen_llm_$(date -u +%Y-%m-%d).txt || true
           git diff --cached --quiet || git commit -m "chore: pipeline diario $(date -u +%Y-%m-%d)"
           git push

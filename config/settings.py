@@ -27,6 +27,10 @@ OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", DATA_DIR / "salidas"))
 # Database
 DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "noticias_medios.db"))
 
+# BigQuery (dashboard data layer)
+BQ_PROJECT = os.getenv("BQ_PROJECT", "monitoreo-medios-489503")
+BQ_DATASET = os.getenv("BQ_DATASET", "monitoreo_medios")
+
 # Config files
 FUENTES_PATH = CONFIG_DIR / "fuentes.yaml"
 KEYWORDS_PATH = CONFIG_DIR / "keywords.yaml"
@@ -37,7 +41,8 @@ RSS_RETRY_DELAY = int(os.getenv("RSS_RETRY_DELAY", "5"))
 
 # GROQ API
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+MAX_NER_PER_RUN = int(os.getenv("MAX_NER_PER_RUN", "300"))
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

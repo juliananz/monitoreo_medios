@@ -1,0 +1,48 @@
+id,nombre,nombre_normalizado,tipo,pais,codigo,es_objetivo
+1,Aguascalientes,aguascalientes,estado,Mexico,,0
+2,Baja California,baja california,estado,Mexico,,0
+3,Baja California Sur,baja california sur,estado,Mexico,,0
+4,Campeche,campeche,estado,Mexico,,0
+5,Chiapas,chiapas,estado,Mexico,,0
+6,Chihuahua,chihuahua,estado,Mexico,,0
+7,Coahuila,coahuila,estado,Mexico,,1
+8,Colima,colima,estado,Mexico,,0
+9,Cdmx,cdmx,estado,Mexico,,0
+10,Ciudad De Mexico,ciudad de mexico,estado,Mexico,,0
+11,Durango,durango,estado,Mexico,,0
+12,Guanajuato,guanajuato,estado,Mexico,,0
+13,Guerrero,guerrero,estado,Mexico,,0
+14,Hidalgo,hidalgo,estado,Mexico,,0
+15,Jalisco,jalisco,estado,Mexico,,0
+16,Mexico,mexico,estado,Mexico,,0
+17,Estado De Mexico,estado de mexico,estado,Mexico,,0
+18,Michoacan,michoacan,estado,Mexico,,0
+19,Morelos,morelos,estado,Mexico,,0
+20,Nayarit,nayarit,estado,Mexico,,0
+21,Nuevo Leon,nuevo leon,estado,Mexico,,0
+22,Oaxaca,oaxaca,estado,Mexico,,0
+23,Puebla,puebla,estado,Mexico,,0
+24,Queretaro,queretaro,estado,Mexico,,0
+25,Quintana Roo,quintana roo,estado,Mexico,,0
+26,San Luis Potosi,san luis potosi,estado,Mexico,,0
+27,Sinaloa,sinaloa,estado,Mexico,,0
+28,Sonora,sonora,estado,Mexico,,0
+29,Tabasco,tabasco,estado,Mexico,,0
+30,Tamaulipas,tamaulipas,estado,Mexico,,0
+31,Tlaxcala,tlaxcala,estado,Mexico,,0
+32,Veracruz,veracruz,estado,Mexico,,0
+33,Yucatan,yucatan,estado,Mexico,,0
+34,Zacatecas,zacatecas,estado,Mexico,,0
+35,México,mexico,pais,México,,0
+36,Estados Unidos,estados unidos,pais,Estados Unidos,,0
+37,China,china,pais,China,,0
+38,Canadá,canada,pais,Canadá,,0
+39,Alemania,alemania,pais,Alemania,,0
+40,Japón,japon,pais,Japón,,0
+41,Corea del Sur,corea del sur,pais,Corea del Sur,,0
+42,India,india,pais,India,,0
+43,Brasil,brasil,pais,Brasil,,0
+44,España,espana,pais,España,,0
+45,Francia,francia,pais,Francia,,0
+46,Italia,italia,pais,Italia,,0
+47,Reino Unido,reino unido,pais,Reino Unido,,0

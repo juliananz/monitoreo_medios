@@ -15,10 +15,13 @@ notebooks/
 
 # Data — not tracked in git
 data/noticias_medios.db
-data/salidas/
 logs/
 .dbt/
 .claude/
+
+# Salidas: ignore bulk files but track what Streamlit Cloud needs
+data/salidas/resumen_diario_*.csv
+data/salidas/reporte_semanal_*.pptx
 
 # Environment (keep .env.example)
 .env
@@ -33,5 +36,4 @@ nul
 # Old output directory (superseded by data/salidas/)
 output/
 
-# Local Excel files
-regiones_coahuila.xlsx
+# (regiones_coahuila.xlsx is tracked — needed by Municipios tab)

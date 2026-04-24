@@ -1,0 +1,9 @@
+id,nombre,descripcion,palabras_clave,activo,fecha_creacion
+1,inversion,"Inversiones, capital, expansión empresarial","inversion,invertir,capital,expansion,nueva planta",1,2026-02-03 16:47:06
+2,empleo,"Empleo, contrataciones, despidos, mercado laboral","empleo,empleos,trabajo,contratacion,despidos",1,2026-02-03 16:47:06
+3,industria,"Industria, manufactura, sector automotriz","industria,industrial,manufactura,automotriz,planta",1,2026-02-03 16:47:06
+4,comercio_exterior,"Exportaciones, importaciones, aranceles, T-MEC","exportacion,importacion,t-mec,arancel,comercio exterior",1,2026-02-03 16:47:06
+9,nearshoring,"Nearshoring, relocalización, cadena de suministro","nearshoring,relocalizacion,deslocalizacion,manufactura extranjera,cadena de suministro,reshoring,friendshoring,relocalizar,inversion extranjera directa,empresa extranjera",1,2026-03-06 20:38:25
+10,aranceles,"Aranceles, tarifas, medidas comerciales proteccionistas","arancel,tarifa,impuesto importacion,arancel compensatorio,dumping,medida antidumping,seccion 232,seccion 301,ieepa,cuota compensatoria,guerra comercial,barrera comercial,represalia arancelaria",1,2026-03-06 20:38:25
+11,energia,"Energía, petróleo, CFE, Pemex, renovables","energia,electricidad,gas natural,planta solar,parque eolico,cfe,gasoducto,refineria,litio,hidrogeno,petroleo,pemex,nuclear,termoelectrica,renovable,combustible,turbina eolica",1,2026-03-06 20:38:25
+12,infraestructura,"Infraestructura, carreteras, puertos, parques industriales","infraestructura,carretera,autopista,puerto,aeropuerto,ferrocarril,tren,parque industrial,zona economica,construccion,obra publica,viaducto,puente,corredor industrial,logistica",1,2026-03-06 20:38:25

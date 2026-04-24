@@ -26,7 +26,9 @@ from app.data import (
     get_entity_trends,
     get_kpis,
     get_medio_volume,
+    get_municipio_counts,
     get_noticias,
+    get_noticias_municipios,
     get_region_dist,
     get_topic_trends,
 )
@@ -315,6 +317,83 @@ _tab_entidades = dbc.Tab(
     ],
 )
 
+# ---------------------------------------------------------------------------
+# Tab 6: Municipios Coahuila
+# ---------------------------------------------------------------------------
+
+_REGIONES_COAHUILA = ["Carbonífera", "Centro", "Laguna", "Norte", "Sureste"]
+
+_tab_municipios = dbc.Tab(
+    label="Municipios",
+    tab_id="municipios",
+    children=[
+        dbc.Row(
+            [
+                dbc.Col([
+                    dbc.Label("Filtrar por región", size="sm"),
+                    dcc.Dropdown(
+                        id="region-filter",
+                        options=[{"label": r, "value": r} for r in _REGIONES_COAHUILA],
+                        multi=True,
+                        value=[],
+                        placeholder="Todas las regiones...",
+                    ),
+                ], md=6),
+                dbc.Col([
+                    dbc.Label("Filtrar por tipo", size="sm"),
+                    dcc.Dropdown(
+                        id="municipio-tipo-filter",
+                        options=[{"label": t, "value": t} for t in ("RIESGO", "OPORTUNIDAD", "MIXTO", "NEUTRO")],
+                        multi=True,
+                        value=[],
+                        placeholder="Todos los tipos...",
+                    ),
+                ], md=6),
+            ],
+            className="mb-3 mt-2",
+        ),
+        dcc.Graph(id="municipio-bar-chart", config={"displayModeBar": False}),
+        html.Hr(),
+        html.Div(id="municipio-noticias-counts", className="mb-2"),
+        dash_table.DataTable(
+            id="municipio-noticias-table",
+            columns=[],
+            data=[],
+            sort_action="native",
+            filter_action="native",
+            page_size=20,
+            page_action="native",
+            markdown_options={"link_target": "_blank"},
+            style_table={"overflowX": "auto"},
+            style_cell={
+                "textAlign": "left",
+                "padding": "8px 12px",
+                "backgroundColor": "#2b2b2b",
+                "color": "#e0e0e0",
+                "border": "1px solid #404040",
+                "whiteSpace": "normal",
+                "height": "auto",
+                "minWidth": "80px",
+                "maxWidth": "400px",
+                "overflow": "hidden",
+                "textOverflow": "ellipsis",
+            },
+            style_header={
+                "backgroundColor": "#1a1a2e",
+                "fontWeight": "bold",
+                "color": "#ffffff",
+                "border": "1px solid #404040",
+            },
+            style_data_conditional=[
+                {"if": {"filter_query": '{tipo} = "RIESGO"'}, "backgroundColor": "#3d1515"},
+                {"if": {"filter_query": '{tipo} = "OPORTUNIDAD"'}, "backgroundColor": "#153d15"},
+                {"if": {"filter_query": '{tipo} = "MIXTO"'}, "backgroundColor": "#3d2a10"},
+            ],
+        ),
+    ],
+)
+
+
 # =============================================================================
 # MAIN LAYOUT
 # =============================================================================
@@ -327,7 +406,7 @@ app.layout = dbc.Container(
         _header,
         _filter_bar,
         dbc.Tabs(
-            [_tab_resumen, _tab_noticias, _tab_ryo, _tab_tendencias, _tab_entidades],
+            [_tab_resumen, _tab_noticias, _tab_ryo, _tab_tendencias, _tab_entidades, _tab_municipios],
             id="main-tabs",
             active_tab="resumen",
         ),
@@ -741,6 +820,112 @@ def update_entity_sparkline(entidad, filters):
     fig.update_traces(line_color="#4e79a7", marker_color="#4e79a7")
     fig.update_layout(margin=dict(t=40, b=20))
     return fig
+
+
+# =============================================================================
+# CALLBACKS — TAB 6: MUNICIPIOS COAHUILA
+# =============================================================================
+
+_REGION_COLORS = {
+    "Carbonífera": "#f28e2b",
+    "Centro": "#4e79a7",
+    "Laguna": "#76b7b2",
+    "Norte": "#59a14f",
+    "Sureste": "#e15759",
+}
+
+
+@app.callback(
+    Output("municipio-bar-chart", "figure"),
+    Output("municipio-noticias-table", "data"),
+    Output("municipio-noticias-table", "columns"),
+    Output("municipio-noticias-counts", "children"),
+    Input("store-filters", "data"),
+    Input("region-filter", "value"),
+    Input("municipio-tipo-filter", "value"),
+    prevent_initial_call=True,
+)
+def update_municipios(filters, regiones_sel, tipos_sel):
+    if not filters:
+        return empty_fig(), [], [], ""
+
+    try:
+        counts = get_municipio_counts(filters["start"], filters["end"])
+        df_news = get_noticias_municipios(filters["start"], filters["end"])
+    except Exception:
+        return empty_fig("Error al cargar datos de municipios"), [], [], ""
+
+    if counts.empty:
+        return empty_fig("Sin noticias municipales para este periodo"), [], [], ""
+
+    # Apply region filter
+    if regiones_sel:
+        counts = counts[counts["region"].isin(regiones_sel)]
+        df_news = df_news[df_news["region"].isin(regiones_sel)]
+
+    # Apply tipo filter (only affects the table and counts, not the bar chart)
+    df_news_filtered = df_news[df_news["tipo"].isin(tipos_sel)] if tipos_sel else df_news
+
+    if counts.empty:
+        return empty_fig("Sin datos para las regiones seleccionadas"), [], [], ""
+
+    # Bar chart: grouped by municipio, coloured by region
+    counts_sorted = counts.sort_values("total", ascending=True)
+    bar_colors = [_REGION_COLORS.get(r, "#aaaaaa") for r in counts_sorted["region"]]
+
+    fig = go.Figure(go.Bar(
+        y=counts_sorted["municipio"],
+        x=counts_sorted["total"],
+        orientation="h",
+        marker_color=bar_colors,
+        text=counts_sorted["total"],
+        textposition="outside",
+        customdata=counts_sorted[["region", "riesgos", "oportunidades"]].values,
+        hovertemplate=(
+            "<b>%{y}</b><br>Región: %{customdata[0]}<br>"
+            "Total: %{x}<br>Riesgos: %{customdata[1]}<br>"
+            "Oportunidades: %{customdata[2]}<extra></extra>"
+        ),
+    ))
+    fig.update_layout(
+        title="Noticias por municipio (color = región)",
+        template=DARK_TEMPLATE,
+        height=max(350, len(counts_sorted) * 28),
+        margin=dict(t=50, b=20, l=200),
+        showlegend=False,
+    )
+
+    # Legend annotation listing region colours
+    legend_items = " | ".join(
+        f'<span style="color:{_REGION_COLORS.get(r, "#aaa")}">■</span> {r}'
+        for r in _REGIONES_COAHUILA
+    )
+
+    # News table
+    if df_news_filtered.empty:
+        return fig, [], [], ""
+
+    display = df_news_filtered[["fecha", "tipo", "region", "municipio", "medio", "titulo", "url"]].copy()
+    display["url"] = display["url"].apply(lambda u: f"[Ver]({u})" if u else "")
+
+    columns = [
+        {"name": "Fecha", "id": "fecha", "type": "text"},
+        {"name": "Tipo", "id": "tipo", "type": "text"},
+        {"name": "Región", "id": "region", "type": "text"},
+        {"name": "Municipio", "id": "municipio", "type": "text"},
+        {"name": "Medio", "id": "medio", "type": "text"},
+        {"name": "Título", "id": "titulo", "type": "text"},
+        {"name": "Enlace", "id": "url", "type": "text", "presentation": "markdown"},
+    ]
+
+    tipo_counts = df_news_filtered["tipo"].value_counts()
+    counts_row = dbc.Row(
+        [dbc.Col(dbc.Badge(f"{tipo}: {cnt}", color="secondary", className="me-1"), width="auto")
+         for tipo, cnt in tipo_counts.items()],
+        className="mb-2 g-1",
+    )
+
+    return fig, display.to_dict("records"), columns, counts_row
 
 
 # =============================================================================

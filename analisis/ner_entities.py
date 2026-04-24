@@ -15,7 +15,7 @@ import time
 import yaml
 from transformers import pipeline
 
-from config.settings import KEYWORDS_PATH, GROQ_API_KEY, GROQ_MODEL
+from config.settings import KEYWORDS_PATH, GROQ_API_KEY, GROQ_MODEL, MAX_NER_PER_RUN
 from analisis.utils import get_db_connection, normalizar_entidad
 
 logger = logging.getLogger(__name__)
@@ -154,6 +154,8 @@ def _extraer_con_groq(batch: list) -> dict:
 
     except Exception as e:
         logger.warning(f"GROQ NER failed for batch: {e}")
+        if "tokens per day" in str(e).lower():
+            raise  # re-raise so ejecutar_ner can break the loop
         return {}
 
 
@@ -319,11 +321,13 @@ def ejecutar_ner():
         cursor.execute("SELECT nombre_normalizado, id FROM regiones")
         region_map = {row[0]: row[1] for row in cursor.fetchall()}
 
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT id, titulo, descripcion
             FROM noticias
             WHERE relevante = 1
               AND (procesado_ner = 0 OR procesado_ner IS NULL)
+            ORDER BY fecha DESC
+            LIMIT {MAX_NER_PER_RUN}
         """)
         noticias = cursor.fetchall()
 
@@ -337,7 +341,14 @@ def ejecutar_ner():
 
             # Try GROQ first, fall back to BERT if it fails
             if use_groq:
-                entities_by_id = _extraer_con_groq(batch)
+                try:
+                    entities_by_id = _extraer_con_groq(batch)
+                except Exception as e:
+                    if "tokens per day" in str(e).lower():
+                        logger.warning("Daily token limit reached — stopping NER for today")
+                        conn.commit()
+                        break
+                    entities_by_id = {}
                 if len(entities_by_id) < len(batch):
                     # GROQ missed some articles — process missing ones with BERT
                     missing = [row for row in batch if row[0] not in entities_by_id]
