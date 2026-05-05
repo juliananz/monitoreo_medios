@@ -22,6 +22,8 @@ logs/
 # Salidas: ignore bulk files but track what Streamlit Cloud needs
 data/salidas/resumen_diario_*.csv
 data/salidas/reporte_semanal_*.pptx
+data/salidas/dashboard_noticias.csv
+data/salidas/resumen_llm_*.txt
 
 # Environment (keep .env.example)
 .env
