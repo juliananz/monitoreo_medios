@@ -10,6 +10,7 @@ Auth: uses Application Default Credentials. Run `gcloud auth application-default
 login` locally or set GOOGLE_APPLICATION_CREDENTIALS to a service-account key.
 """
 
+import os
 import re
 import sys
 import unicodedata
@@ -20,9 +21,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 from google.cloud import bigquery
+from google.oauth2 import service_account
 
 from analisis.utils import clasificar_tipo
 from config.settings import BASE_DIR, BQ_DATASET, BQ_PROJECT, OUTPUT_DIR
+
+# Same service-account keyfile used by the dbt profile and the export job.
+_FALLBACK_KEYFILE = BASE_DIR / ".dbt" / "monitoreo-medios-489503-524ea4b1fd03.json"
 
 # ---------------------------------------------------------------------------
 # BigQuery client + table refs
@@ -42,7 +47,15 @@ _client: bigquery.Client | None = None
 def _bq() -> bigquery.Client:
     global _client
     if _client is None:
-        _client = bigquery.Client(project=BQ_PROJECT)
+        keyfile = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or str(_FALLBACK_KEYFILE)
+        if not os.path.exists(keyfile):
+            raise FileNotFoundError(
+                f"BigQuery service-account keyfile not found at {keyfile!r}. "
+                "Set GOOGLE_APPLICATION_CREDENTIALS or place the keyfile at "
+                f"{_FALLBACK_KEYFILE}."
+            )
+        credentials = service_account.Credentials.from_service_account_file(keyfile)
+        _client = bigquery.Client(project=BQ_PROJECT, credentials=credentials)
     return _client
 
 

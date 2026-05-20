@@ -31,6 +31,10 @@ DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "noticias_medios.db"))
 BQ_PROJECT = os.getenv("BQ_PROJECT", "monitoreo-medios-489503")
 BQ_DATASET = os.getenv("BQ_DATASET", "monitoreo_medios")
 
+# dbt project (sibling repo that builds the BigQuery marts)
+DBT_PROJECT_DIR = Path(os.getenv("DBT_PROJECT_DIR", BASE_DIR.parent / "monitoreo_dbt"))
+DBT_EXECUTABLE = os.getenv("DBT_EXECUTABLE", "dbt")
+
 # Config files
 FUENTES_PATH = CONFIG_DIR / "fuentes.yaml"
 KEYWORDS_PATH = CONFIG_DIR / "keywords.yaml"
